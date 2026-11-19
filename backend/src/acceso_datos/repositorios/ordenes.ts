@@ -2,7 +2,9 @@ import type { DataSource, EntityManager } from 'typeorm';
 import type { EstadoOrden, OrdenParaConformidad } from '../../dominio/ordenes/OrdenServicio';
 import type {
   ConsultaConformidades,
+  ConsultaOrdenes,
   FilaConformidad,
+  FilaOrden,
   ItemServicio,
   NuevaConformidad,
   OrdenApta,
@@ -66,6 +68,73 @@ export class RepositorioOrdenesServicioTypeORM implements RepositorioOrdenesServ
 
   async cambiarEstado(ordenId: number, nuevo: EstadoOrden): Promise<void> {
     await this.em.query(`UPDATE tab_os SET estado = $2, version = version + 1 WHERE id = $1`, [ordenId, nuevo]);
+  }
+
+  async ordenActivaDeMoto(motoId: number): Promise<string | null> {
+    const [f]: Fila[] = await this.em.query(
+      `SELECT nro_orden FROM tab_os WHERE moto_id = $1 AND estado IN ('RECEPCIONADO', 'EN_PROCESO') LIMIT 1`,
+      [motoId],
+    );
+    return f ? String(f.nro_orden) : null;
+  }
+
+  async registrar(o: { clienteId: number; motoId: number; tipoServicio: string; descripcion: string }) {
+    try {
+      // nro_orden lo genera la BD con siguiente_nro_orden() (correlativo anual sin huecos).
+      const [f]: Fila[] = await this.em.query(
+        `INSERT INTO tab_os (tipo_servicio, descripcion, estado, cliente_id, moto_id)
+         VALUES ($1, $2, 'RECEPCIONADO', $3, $4)
+         RETURNING id, nro_orden, fecha_recepcion`,
+        [o.tipoServicio, o.descripcion, o.clienteId, o.motoId],
+      );
+      return { id: Number(f.id), nroOrden: String(f.nro_orden), fechaRecepcion: f.fecha_recepcion as Date };
+    } catch (error) {
+      throw traducirErrorBD(error);
+    }
+  }
+}
+
+/** Consulta básica de órdenes (CU-TAL-02) y N.° referencial. */
+export class ConsultaOrdenesTypeORM implements ConsultaOrdenes {
+  constructor(private readonly ds: DataSource) {}
+
+  async listar(filtro?: { texto?: string }): Promise<FilaOrden[]> {
+    const filas: Fila[] = await this.ds.query(
+      `SELECT os.id, os.nro_orden, os.fecha_recepcion, os.estado, os.tipo_servicio, os.descripcion,
+              c.nombre_razon_social AS cliente, c.telefono, m.placa, m.modelo
+         FROM tab_os os
+         JOIN tab_cliente c ON c.id = os.cliente_id
+         JOIN tab_moto m    ON m.id = os.moto_id
+        WHERE $1::text IS NULL
+           OR os.nro_orden           ILIKE '%' || $1 || '%'
+           OR m.placa                ILIKE '%' || $1 || '%'
+           OR c.nombre_razon_social  ILIKE '%' || $1 || '%'
+     ORDER BY os.fecha_recepcion DESC
+        LIMIT 200`,
+      [filtro?.texto ?? null],
+    );
+    return filas.map((f) => ({
+      id: Number(f.id),
+      nroOrden: String(f.nro_orden),
+      fechaRecepcion: f.fecha_recepcion as Date,
+      estado: f.estado as EstadoOrden,
+      tipoServicio: String(f.tipo_servicio),
+      descripcion: String(f.descripcion),
+      cliente: String(f.cliente),
+      telefono: (f.telefono as string | null) ?? null,
+      placa: (f.placa as string | null) ?? null,
+      modelo: (f.modelo as string | null) ?? null,
+    }));
+  }
+
+  async proximoNumero(): Promise<string> {
+    const [f]: Fila[] = await this.ds.query(
+      `SELECT EXTRACT(YEAR FROM NOW())::INT AS anio,
+              COALESCE((SELECT ultimo_numero FROM tab_correlativo_anual
+                         WHERE entidad = 'ORDEN_SERVICIO' AND anio = EXTRACT(YEAR FROM NOW())::INT), 0) + 1 AS n`,
+    );
+    const n = String(f.n);
+    return `ORD-${f.anio}-${n.padStart(4, '0')}`;
   }
 }
 
@@ -159,8 +228,8 @@ export class ConsultaConformidadesTypeORM implements ConsultaConformidades {
           descripcion: String(f.descripcion),
         },
         cliente: {
-          tipoDocumento: String(f.tipo_documento),
-          numeroDocumento: String(f.numero_documento),
+          tipoDocumento: (f.tipo_documento as string | null) ?? 'Sin documento',
+          numeroDocumento: (f.numero_documento as string | null) ?? '',
           nombre: String(f.nombre_razon_social),
           telefono: (f.telefono as string | null) ?? null,
         },

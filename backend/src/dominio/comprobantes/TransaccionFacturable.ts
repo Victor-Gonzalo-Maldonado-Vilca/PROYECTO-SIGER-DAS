@@ -17,8 +17,9 @@ export interface ItemFacturable {
 
 export interface ClienteAdquiriente {
   id: number;
-  tipoDocumento: 'DNI' | 'RUC';
-  numeroDocumento: string;
+  /** null si el cliente se registró sin documento (recepción del taller, ILA-0001). */
+  tipoDocumento: 'DNI' | 'RUC' | null;
+  numeroDocumento: string | null;
   nombre: string;
 }
 
@@ -45,6 +46,7 @@ export function motivoNoEmitibleComoBoleta(t: TransaccionFacturable): string | n
   if (t.tieneComprobante) return `la transacción ${t.referencia} ya tiene un comprobante`;
   if (!t.listaParaComprobante) return `la transacción ${t.referencia} no está lista para comprobante`;
   if (!t.cliente) return `la transacción ${t.referencia} no tiene cliente asociado`;
+  if (!t.cliente.tipoDocumento) return 'el cliente no tiene DNI registrado';
   if (t.cliente.tipoDocumento !== 'DNI') return 'el cliente es persona jurídica: corresponde factura, no boleta';
   if (!(t.total > 0)) return `la transacción ${t.referencia} no tiene un monto válido`;
   return null;

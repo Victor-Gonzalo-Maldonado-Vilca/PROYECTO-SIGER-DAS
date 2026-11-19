@@ -17,10 +17,20 @@ export interface RepositorioOrdenesServicio {
   bloquearParaConformidad(ordenId: number): Promise<OrdenParaConformidad | null>;
   itemsDeProforma(proformaId: number): Promise<ItemServicio[]>;
   cambiarEstado(ordenId: number, nuevo: EstadoOrden): Promise<void>;
+  /** RN-TAL-02: ¿la moto tiene una orden Recepcionado o En Proceso? Devuelve su N.° o null. */
+  ordenActivaDeMoto(motoId: number): Promise<string | null>;
+  /** ILA-0001 paso 7: INSERT con estado RECEPCIONADO; la BD genera el N.° ORD-AAAA-XXXX. */
+  registrar(o: {
+    clienteId: number;
+    motoId: number;
+    tipoServicio: string;
+    descripcion: string;
+  }): Promise<{ id: number; nroOrden: string; fechaRecepcion: Date }>;
 }
 
 export interface RepositorioHistorialOrden {
-  registrar(e: { ordenId: number; anterior: EstadoOrden; nuevo: EstadoOrden; usuarioId: number }): Promise<void>;
+  /** anterior = null en el registro inicial de la orden (ILA-0001 paso 8). */
+  registrar(e: { ordenId: number; anterior: EstadoOrden | null; nuevo: EstadoOrden; usuarioId: number }): Promise<void>;
 }
 
 export interface NuevaConformidad {
@@ -67,6 +77,26 @@ export interface FilaConformidad {
   cliente: string;
   kilometraje: number;
   precioTotal: number;
+}
+
+/** Fila del listado de órdenes (consulta básica, CU-TAL-02). */
+export interface FilaOrden {
+  id: number;
+  nroOrden: string;
+  fechaRecepcion: Date;
+  estado: EstadoOrden;
+  tipoServicio: string;
+  descripcion: string;
+  cliente: string;
+  telefono: string | null;
+  placa: string | null;
+  modelo: string | null;
+}
+
+export interface ConsultaOrdenes {
+  listar(filtro?: { texto?: string }): Promise<FilaOrden[]>;
+  /** Próximo N.° (solo referencial para mostrarlo al abrir el formulario, paso 2). */
+  proximoNumero(): Promise<string>;
 }
 
 export interface ConsultaConformidades {

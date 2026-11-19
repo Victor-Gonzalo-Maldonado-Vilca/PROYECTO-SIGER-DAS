@@ -4,6 +4,8 @@ import type { EmitirBoleta } from '../../aplicacion/comprobantes/EmitirBoleta';
 import type { ReintentarEnvio } from '../../aplicacion/comprobantes/ReintentarEnvio';
 import { MODOS_SUNAT, type ServicioTributarioSimulado } from '../../integraciones/sunat/ServicioTributarioSimulado';
 import type { ConsultarConformidades } from '../../aplicacion/ordenes/ConsultarConformidades';
+import type { ConsultarOrdenes } from '../../aplicacion/ordenes/ConsultarOrdenes';
+import type { RegistrarOrdenServicio } from '../../aplicacion/ordenes/RegistrarOrdenServicio';
 import type { RegistrarConformidadServicio } from '../../aplicacion/ordenes/RegistrarConformidadServicio';
 import type { IniciarSesion } from '../../aplicacion/seguridad/IniciarSesion';
 import type { ListarVentasMoto } from '../../aplicacion/ventas/ListarVentasMoto';
@@ -20,6 +22,8 @@ export interface CasosDeUso {
   iniciarSesion: IniciarSesion;
   registrarVentaMoto: RegistrarVentaMoto;
   listarVentasMoto: ListarVentasMoto;
+  registrarOrden: RegistrarOrdenServicio;
+  consultarOrdenes: ConsultarOrdenes;
   registrarConformidad: RegistrarConformidadServicio;
   consultarConformidades: ConsultarConformidades;
   emitirBoleta: EmitirBoleta;
@@ -69,8 +73,35 @@ export function crearRutas(casos: CasosDeUso, tokens: ServicioTokenJwt): Router 
     }),
   );
 
-  // ---------------- MOD-02 Conformidad de servicio (EDU-0019, INT-075) ----------------
   const taller = [conSesion, requiereModulo(Modulos.ORDENES_SERVICIO)];
+
+  // ---------------- MOD-02 Órdenes de servicio (EDU-0001, INT-001) ----------------
+  r.get(
+    '/ordenes',
+    ...taller,
+    async(async (req, res) => {
+      const q = typeof req.query.q === 'string' ? req.query.q : undefined;
+      res.json(await casos.consultarOrdenes.listar(req.usuario, q));
+    }),
+  );
+
+  // Paso 2: N.° referencial y fecha al abrir el formulario (BTN-06 Nuevo registro)
+  r.get(
+    '/ordenes/proximo-numero',
+    ...taller,
+    async(async (req, res) => res.json(await casos.consultarOrdenes.proximoNumero(req.usuario))),
+  );
+
+  // ILA-0001: BTN-01 Guardar
+  r.post(
+    '/ordenes',
+    ...taller,
+    async(async (req, res) => {
+      res.status(201).json(await casos.registrarOrden.ejecutar(req.body ?? {}, req.usuario));
+    }),
+  );
+
+  // ---------------- MOD-02 Conformidad de servicio (EDU-0019, INT-075) ----------------
 
   // SEL-04: órdenes aptas para conformidad
   r.get(

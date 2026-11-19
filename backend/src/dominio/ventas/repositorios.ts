@@ -10,6 +10,10 @@ export interface RepositorioMotos {
   existeNumeroChasis(numeroChasis: string): Promise<boolean>;
   /** Inserta en Tab_moto y devuelve el id generado. */
   guardar(moto: Moto): Promise<number>;
+  /** ILA-0001: busca la moto por placa y bloquea su fila (FOR UPDATE). */
+  bloquearPorPlaca(placa: string): Promise<{ id: number; clienteId: number | null } | null>;
+  /** ILA-0001: registra una moto que ingresa al taller (solo placa, color y modelo). */
+  registrarRecibida(datos: { placa: string; color: string | null; modelo: string | null; clienteId: number }): Promise<number>;
 }
 
 export interface VentaMotoRegistrada {

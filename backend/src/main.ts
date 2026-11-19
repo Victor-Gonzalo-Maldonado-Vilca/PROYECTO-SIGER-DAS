@@ -1,7 +1,9 @@
 import { config } from './config';
 import { crearFuenteDatos } from './acceso_datos/fuenteDatos';
 import { ConsultaComprobantesTypeORM } from './acceso_datos/repositorios/comprobantes';
-import { ConsultaConformidadesTypeORM } from './acceso_datos/repositorios/ordenes';
+import { ConsultaConformidadesTypeORM, ConsultaOrdenesTypeORM } from './acceso_datos/repositorios/ordenes';
+import { ConsultarOrdenes } from './aplicacion/ordenes/ConsultarOrdenes';
+import { RegistrarOrdenServicio } from './aplicacion/ordenes/RegistrarOrdenServicio';
 import { ConsultaVentasMotoTypeORM } from './acceso_datos/repositorios/ventas';
 import { RepositorioUsuariosTypeORM } from './acceso_datos/repositorios/usuarios';
 import { UnidadDeTrabajoTypeORM } from './acceso_datos/UnidadDeTrabajoTypeORM';
@@ -48,6 +50,8 @@ async function iniciar() {
       iniciarSesion: new IniciarSesion(new RepositorioUsuariosTypeORM(ds), new ServicioHashBcrypt(), tokens),
       registrarVentaMoto: new RegistrarVentaMoto(uow),
       listarVentasMoto: new ListarVentasMoto(new ConsultaVentasMotoTypeORM(ds)),
+      registrarOrden: new RegistrarOrdenServicio(uow),
+      consultarOrdenes: new ConsultarOrdenes(new ConsultaOrdenesTypeORM(ds)),
       registrarConformidad: new RegistrarConformidadServicio(uow),
       consultarConformidades: new ConsultarConformidades(new ConsultaConformidadesTypeORM(ds)),
       emitirBoleta: new EmitirBoleta(uow, procesadorSunat),

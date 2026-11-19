@@ -1,6 +1,7 @@
 import type { DataSource } from 'typeorm';
 import type { RepositoriosTransaccionales, UnidadDeTrabajo } from '../aplicacion/puertos/UnidadDeTrabajo';
 import { RepositorioAuditoriaTypeORM } from './repositorios/auditoria';
+import { RepositorioClientesTypeORM } from './repositorios/clientes';
 import {
   RepositorioComprobantesTypeORM,
   RepositorioPendientesTypeORM,
@@ -26,6 +27,7 @@ export class UnidadDeTrabajoTypeORM implements UnidadDeTrabajo {
     return this.ds.transaction(async (em) =>
       trabajo({
         motos: new RepositorioMotosTypeORM(em),
+        clientes: new RepositorioClientesTypeORM(em),
         ventasMoto: new RepositorioVentasMotoTypeORM(em),
         ordenes: new RepositorioOrdenesServicioTypeORM(em),
         historialOrden: new RepositorioHistorialOrdenTypeORM(em),

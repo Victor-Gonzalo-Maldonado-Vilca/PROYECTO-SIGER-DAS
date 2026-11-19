@@ -1,4 +1,5 @@
 import type { RepositorioAuditoria } from '../../dominio/auditoria/RepositorioAuditoria';
+import type { RepositorioClientes } from '../../dominio/clientes/repositorios';
 import type {
   RepositorioComprobantes,
   RepositorioPendientes,
@@ -17,6 +18,7 @@ import type { RepositorioMotos, RepositorioVentasMoto } from '../../dominio/vent
  */
 export interface RepositoriosTransaccionales {
   motos: RepositorioMotos;
+  clientes: RepositorioClientes;
   ventasMoto: RepositorioVentasMoto;
   ordenes: RepositorioOrdenesServicio;
   historialOrden: RepositorioHistorialOrden;

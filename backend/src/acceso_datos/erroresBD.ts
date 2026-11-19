@@ -5,6 +5,9 @@ import { ErrorConflicto } from '../dominio/compartido/errores';
 const RESTRICCIONES_UNICAS: Record<string, ErrorConflicto> = {
   uq_moto_numero_motor: new ErrorConflicto('MSG-46', 'N.° de motor duplicado', 'numeroMotor'),
   uq_moto_numero_chasis: new ErrorConflicto('MSG-47', 'N.° de chasis duplicado', 'numeroChasis'),
+  // ILA-0001 / RN-TAL-02: dos recepciones simultáneas de la misma moto o placa.
+  uq_os_orden_activa_por_moto: new ErrorConflicto('MSG-30', 'Orden activa existente para la moto.', 'placa'),
+  uq_moto_placa: new ErrorConflicto('MSG-30', 'Orden activa existente para la moto.', 'placa'),
   uq_comprobante_por_transaccion: new ErrorConflicto(
     'COMPROBANTE-EXISTE',
     'No se puede emitir la boleta: la transacción ya tiene un comprobante.',

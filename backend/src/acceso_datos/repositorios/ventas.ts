@@ -39,6 +39,26 @@ export class RepositorioMotosTypeORM implements RepositorioMotos {
       throw traducirErrorBD(error);
     }
   }
+
+  async bloquearPorPlaca(placa: string): Promise<{ id: number; clienteId: number | null } | null> {
+    const [f]: Array<Record<string, unknown>> = await this.em.query(
+      `SELECT id, cliente_id FROM tab_moto WHERE placa = $1 FOR UPDATE`,
+      [placa],
+    );
+    return f ? { id: Number(f.id), clienteId: f.cliente_id == null ? null : Number(f.cliente_id) } : null;
+  }
+
+  async registrarRecibida(datos: { placa: string; color: string | null; modelo: string | null; clienteId: number }) {
+    try {
+      const [f]: Array<Record<string, unknown>> = await this.em.query(
+        `INSERT INTO tab_moto (placa, color, modelo, cliente_id) VALUES ($1, $2, $3, $4) RETURNING id`,
+        [datos.placa, datos.color, datos.modelo, datos.clienteId],
+      );
+      return Number(f.id);
+    } catch (error) {
+      throw traducirErrorBD(error);
+    }
+  }
 }
 
 /** Repositorio de Tab_venta_moto. */

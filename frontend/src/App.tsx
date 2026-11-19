@@ -3,12 +3,14 @@ import { api, sesionGuardada } from './api/cliente';
 import Comprobantes from './paginas/Comprobantes';
 import Conformidades from './paginas/Conformidades';
 import Login from './paginas/Login';
+import OrdenesServicio from './paginas/OrdenesServicio';
 import VentasMoto from './paginas/VentasMoto';
 import type { Usuario } from './tipos';
 
 /** Pantallas implementadas y el módulo que las habilita (RBAC). */
 const PANTALLAS = [
   { clave: 'ventas-moto', titulo: 'Venta de motos', modulo: 'MOD-04', componente: VentasMoto },
+  { clave: 'ordenes', titulo: 'Órdenes de servicio', modulo: 'MOD-02', componente: OrdenesServicio },
   { clave: 'conformidades', titulo: 'Conformidad de servicio', modulo: 'MOD-02', componente: Conformidades },
   { clave: 'comprobantes', titulo: 'Comprobantes', modulo: 'MOD-08', componente: Comprobantes },
 ] as const;

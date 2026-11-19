@@ -38,8 +38,8 @@ const cliente = (f: Fila): TransaccionFacturable['cliente'] =>
     ? null
     : {
         id: num(f.cliente_id),
-        tipoDocumento: f.tipo_documento as 'DNI' | 'RUC',
-        numeroDocumento: String(f.numero_documento),
+        tipoDocumento: (f.tipo_documento as 'DNI' | 'RUC' | null) ?? null,
+        numeroDocumento: (f.numero_documento as string | null) ?? null,
         nombre: String(f.nombre_razon_social),
       };
 
