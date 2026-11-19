@@ -5,6 +5,11 @@ import { ErrorConflicto } from '../dominio/compartido/errores';
 const RESTRICCIONES_UNICAS: Record<string, ErrorConflicto> = {
   uq_moto_numero_motor: new ErrorConflicto('MSG-46', 'N.° de motor duplicado', 'numeroMotor'),
   uq_moto_numero_chasis: new ErrorConflicto('MSG-47', 'N.° de chasis duplicado', 'numeroChasis'),
+  uq_cs_orden: new ErrorConflicto(
+    'MSG-05',
+    'Error en el registro de conformidad: la orden ya tiene una conformidad registrada',
+    'ordenId',
+  ),
 };
 
 /**

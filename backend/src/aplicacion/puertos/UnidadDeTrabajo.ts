@@ -1,4 +1,9 @@
 import type { RepositorioAuditoria } from '../../dominio/auditoria/RepositorioAuditoria';
+import type {
+  RepositorioConformidades,
+  RepositorioHistorialOrden,
+  RepositorioOrdenesServicio,
+} from '../../dominio/ordenes/repositorios';
 import type { RepositorioMotos, RepositorioVentasMoto } from '../../dominio/ventas/repositorios';
 
 /**
@@ -8,6 +13,9 @@ import type { RepositorioMotos, RepositorioVentasMoto } from '../../dominio/vent
 export interface RepositoriosTransaccionales {
   motos: RepositorioMotos;
   ventasMoto: RepositorioVentasMoto;
+  ordenes: RepositorioOrdenesServicio;
+  historialOrden: RepositorioHistorialOrden;
+  conformidades: RepositorioConformidades;
   auditoria: RepositorioAuditoria;
 }
 

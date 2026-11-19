@@ -1,6 +1,11 @@
 import type { DataSource } from 'typeorm';
 import type { RepositoriosTransaccionales, UnidadDeTrabajo } from '../aplicacion/puertos/UnidadDeTrabajo';
 import { RepositorioAuditoriaTypeORM } from './repositorios/auditoria';
+import {
+  RepositorioConformidadesTypeORM,
+  RepositorioHistorialOrdenTypeORM,
+  RepositorioOrdenesServicioTypeORM,
+} from './repositorios/ordenes';
 import { RepositorioMotosTypeORM, RepositorioVentasMotoTypeORM } from './repositorios/ventas';
 
 /**
@@ -17,6 +22,9 @@ export class UnidadDeTrabajoTypeORM implements UnidadDeTrabajo {
       trabajo({
         motos: new RepositorioMotosTypeORM(em),
         ventasMoto: new RepositorioVentasMotoTypeORM(em),
+        ordenes: new RepositorioOrdenesServicioTypeORM(em),
+        historialOrden: new RepositorioHistorialOrdenTypeORM(em),
+        conformidades: new RepositorioConformidadesTypeORM(em),
         auditoria: new RepositorioAuditoriaTypeORM(em),
       }),
     );

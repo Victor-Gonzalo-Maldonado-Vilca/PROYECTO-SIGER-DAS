@@ -3,6 +3,9 @@ import { crearFuenteDatos } from './acceso_datos/fuenteDatos';
 import { ConsultaVentasMotoTypeORM } from './acceso_datos/repositorios/ventas';
 import { RepositorioUsuariosTypeORM } from './acceso_datos/repositorios/usuarios';
 import { UnidadDeTrabajoTypeORM } from './acceso_datos/UnidadDeTrabajoTypeORM';
+import { ConsultaConformidadesTypeORM } from './acceso_datos/repositorios/ordenes';
+import { ConsultarConformidades } from './aplicacion/ordenes/ConsultarConformidades';
+import { RegistrarConformidadServicio } from './aplicacion/ordenes/RegistrarConformidadServicio';
 import { IniciarSesion } from './aplicacion/seguridad/IniciarSesion';
 import { ListarVentasMoto } from './aplicacion/ventas/ListarVentasMoto';
 import { RegistrarVentaMoto } from './aplicacion/ventas/RegistrarVentaMoto';
@@ -26,6 +29,8 @@ async function iniciar() {
       iniciarSesion: new IniciarSesion(new RepositorioUsuariosTypeORM(ds), new ServicioHashBcrypt(), tokens),
       registrarVentaMoto: new RegistrarVentaMoto(uow),
       listarVentasMoto: new ListarVentasMoto(new ConsultaVentasMotoTypeORM(ds)),
+      registrarConformidad: new RegistrarConformidadServicio(uow),
+      consultarConformidades: new ConsultarConformidades(new ConsultaConformidadesTypeORM(ds)),
     },
     tokens,
     config.corsOrigen,

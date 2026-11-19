@@ -26,8 +26,13 @@ h1, h2, h3 { margin: 0 0 0.75rem; }
   display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;
   padding: 0.75rem 16px; background: var(--texto); color: #fff;
 }
-.barra nav { flex: 1; }
-.barra .activo { border-bottom: 2px solid var(--primario); padding-bottom: 2px; }
+.barra nav { flex: 1; display: flex; gap: 0.25rem; flex-wrap: wrap; }
+.barra .pestana {
+  background: transparent; border: none; border-bottom: 2px solid transparent; border-radius: 0;
+  color: #fffc; padding: 0.35rem 0.6rem; font-weight: 500;
+}
+.barra .pestana:hover:not(:disabled) { background: #ffffff14; color: #fff; }
+.barra .pestana.activo { border-bottom-color: var(--primario); color: #fff; }
 .barra .usuario { display: flex; align-items: center; gap: 0.75rem; font-size: 0.9rem; }
 
 main { max-width: 1200px; margin: 0 auto; padding: 1.5rem 16px; }
@@ -45,11 +50,31 @@ main { max-width: 1200px; margin: 0 auto; padding: 1.5rem 16px; }
 label { display: grid; gap: 0.35rem; font-size: 0.9rem; font-weight: 600; }
 label.invalido input { border-color: var(--error-texto); background: var(--error-fondo); }
 
-input {
+input, select {
   font: inherit; padding: 0.55rem 0.7rem; border: 1px solid var(--borde); border-radius: 6px;
   background: #fff; color: var(--texto);
 }
-input:focus { outline: 2px solid var(--primario); outline-offset: 1px; }
+input:focus, select:focus { outline: 2px solid var(--primario); outline-offset: 1px; }
+
+/* INT-075 */
+.resumen {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;
+  margin: 1rem 0; padding: 1rem; background: #f8f9fb; border: 1px solid var(--borde); border-radius: 8px;
+}
+.resumen h4 { margin: 0 0 0.35rem; }
+.resumen p { margin: 0.15rem 0; }
+.resumen .ancho-completo { grid-column: 1 / -1; overflow-x: auto; }
+.resumen tfoot th { color: var(--texto); }
+.campo-firma { margin-top: 1rem; display: grid; gap: 0.5rem; }
+.panel-firma { position: relative; user-select: none; -webkit-user-select: none; }
+.panel-firma canvas {
+  display: block; width: 100%; height: 180px; background: #fff; border: 2px dashed var(--borde);
+  border-radius: 8px; touch-action: none; cursor: crosshair;
+}
+.campo-firma.invalido canvas { border-color: var(--error-texto); }
+.panel-firma .indicacion {
+  position: absolute; inset: 0; display: grid; place-items: center; color: var(--sutil); pointer-events: none;
+}
 
 button {
   font: inherit; font-weight: 600; padding: 0.55rem 1.1rem; border-radius: 6px; cursor: pointer;

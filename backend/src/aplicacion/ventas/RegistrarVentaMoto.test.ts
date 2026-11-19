@@ -44,6 +44,10 @@ class UnidadDeTrabajoFalsa implements UnidadDeTrabajo {
         },
       },
       auditoria: { registrar: async (e) => void tx.auditoria.push(e) },
+      // No intervienen en ILA-0012.
+      ordenes: {} as RepositoriosTransaccionales['ordenes'],
+      historialOrden: {} as RepositoriosTransaccionales['historialOrden'],
+      conformidades: {} as RepositoriosTransaccionales['conformidades'],
     });
     // "COMMIT": solo si no hubo excepción
     Object.assign(this.bd, tx);

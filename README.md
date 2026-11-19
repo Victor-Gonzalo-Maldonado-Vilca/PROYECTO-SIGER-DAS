@@ -51,6 +51,14 @@ Los usuarios de prueba están en [`db/init/002_datos_iniciales.sql`](db/init/002
 
 Para borrar la base de datos y recrearla desde cero: `docker compose down -v` y luego `docker compose up -d`.
 
+Los scripts de `db/init` se ejecutan **solo** cuando la base de datos se crea por primera vez. Si un compañero agrega un script nuevo, tienes dos opciones:
+
+- Recrear la base con `docker compose down -v` y `docker compose up -d` (se pierden los datos locales).
+- Aplicar solo el script nuevo, por ejemplo:
+  `docker exec -i siger-db psql -U siger -d db_siger < db/init/003_ordenes_conformidad.sql`
+
+El script `004_datos_demo_taller.sql` carga órdenes y proformas de demostración para probar ILA-0075.
+
 ## Pruebas
 
 ```bash
@@ -66,7 +74,7 @@ npm run typecheck
 |---|---|---|
 | EDU-0017 | Inicio de sesión con JWT y RBAC por módulo | ✅ |
 | ILA-0012 | Registrar venta de moto: transacción atómica Tab_moto + Tab_venta_moto + auditoría | ✅ |
-| ILA-0075 | Conformidad de servicio (tab_CS + tab_OS en una transacción) | ⏳ |
+| ILA-0075 | Conformidad de servicio con firma PAD-01: INSERT tab_CS + UPDATE tab_OS + historial en una transacción | ✅ |
 | ILA-0018 | Emitir comprobante (outbox + job + conciliación, PRO-03 y PRO-04) | ⏳ |
 
 ## Cómo agregar un caso de uso nuevo

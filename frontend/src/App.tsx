@@ -1,12 +1,20 @@
 import { useEffect, useState } from 'react';
 import { api, sesionGuardada } from './api/cliente';
+import Conformidades from './paginas/Conformidades';
 import Login from './paginas/Login';
 import VentasMoto from './paginas/VentasMoto';
 import type { Usuario } from './tipos';
 
+/** Pantallas implementadas y el módulo que las habilita (RBAC). */
+const PANTALLAS = [
+  { clave: 'ventas-moto', titulo: 'Venta de motos', modulo: 'MOD-04', componente: VentasMoto },
+  { clave: 'conformidades', titulo: 'Conformidad de servicio', modulo: 'MOD-02', componente: Conformidades },
+] as const;
+
 export default function App() {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [cargando, setCargando] = useState(true);
+  const [pantalla, setPantalla] = useState<string | null>(null);
 
   // Recupera la sesión si el token sigue siendo válido.
   useEffect(() => {
@@ -24,18 +32,30 @@ export default function App() {
   const cerrarSesion = () => {
     sesionGuardada.borrar();
     setUsuario(null);
+    setPantalla(null);
   };
 
   if (cargando) return <p className="centrado">Cargando…</p>;
   if (!usuario) return <Login alIngresar={setUsuario} />;
+
+  const permitidas = PANTALLAS.filter((p) => usuario.modulos.includes(p.modulo));
+  const actual = permitidas.find((p) => p.clave === pantalla) ?? permitidas[0];
+  const Pantalla = actual?.componente;
 
   return (
     <div className="app">
       <header className="barra">
         <strong>SIGER</strong>
         <nav>
-          {/* Por ahora solo MOD-04; los demás módulos se agregarán aquí. */}
-          {usuario.modulos.includes('MOD-04') && <span className="activo">Venta de motos</span>}
+          {permitidas.map((p) => (
+            <button
+              key={p.clave}
+              className={`pestana ${p.clave === actual?.clave ? 'activo' : ''}`}
+              onClick={() => setPantalla(p.clave)}
+            >
+              {p.titulo}
+            </button>
+          ))}
         </nav>
         <div className="usuario">
           <span>
@@ -47,11 +67,7 @@ export default function App() {
         </div>
       </header>
       <main>
-        {usuario.modulos.includes('MOD-04') ? (
-          <VentasMoto />
-        ) : (
-          <p className="aviso">Su perfil no tiene módulos implementados todavía.</p>
-        )}
+        {Pantalla ? <Pantalla key={actual.clave} /> : <p className="aviso">Su perfil no tiene módulos implementados todavía.</p>}
       </main>
     </div>
   );
