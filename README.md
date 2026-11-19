@@ -57,7 +57,23 @@ Los scripts de `db/init` se ejecutan **solo** cuando la base de datos se crea po
 - Aplicar solo el script nuevo, por ejemplo:
   `docker exec -i siger-db psql -U siger -d db_siger < db/init/003_ordenes_conformidad.sql`
 
-El script `004_datos_demo_taller.sql` carga órdenes y proformas de demostración para probar ILA-0075.
+Los scripts de datos de demostración son:
+
+- `004_datos_demo_taller.sql`: carga órdenes y proformas para probar ILA-0075.
+- `006_datos_demo_comprobantes.sql`: carga ventas y órdenes facturables para probar ILA-0018.
+
+### SUNAT simulada (ILA-0018)
+
+Mientras no se elija un proveedor OSE/PSE, el backend usa `ServicioTributarioSimulado`. El gerente puede cambiar su modo desde la pantalla **Comprobantes** para demostrar cada escenario:
+
+| Modo | Qué pasa |
+|---|---|
+| `NORMAL` | SUNAT acepta: MSG-62 y la transacción pasa a «comprobante emitido». |
+| `CAIDO` | MSG-61: la boleta queda `PENDIENTE` y el job la reintenta sola. |
+| `RESPUESTA_PERDIDA` | SUNAT la registra, pero la respuesta se pierde. Queda `POR_CONCILIAR` y el job **consulta** antes de reenviar, así que no se duplica. |
+| `RECHAZAR` | Rechazo explícito. La transacción vuelve a quedar disponible. |
+
+> Las pruebas de integración usan la misma base de datos que el backend en desarrollo. Detén el backend (`npm run dev`) antes de ejecutar `npm run test:integracion`, para que su job no tome los pendientes de las pruebas.
 
 ## Pruebas
 
@@ -75,7 +91,7 @@ npm run typecheck
 | EDU-0017 | Inicio de sesión con JWT y RBAC por módulo | ✅ |
 | ILA-0012 | Registrar venta de moto: transacción atómica Tab_moto + Tab_venta_moto + auditoría | ✅ |
 | ILA-0075 | Conformidad de servicio con firma PAD-01: INSERT tab_CS + UPDATE tab_OS + historial en una transacción | ✅ |
-| ILA-0018 | Emitir comprobante (outbox + job + conciliación, PRO-03 y PRO-04) | ⏳ |
+| ILA-0018 | Emitir boleta a persona natural: outbox, job de reintentos, conciliación y correlativo sin huecos (PRO-03 y PRO-04), con SUNAT simulada | ✅ |
 
 ## Cómo agregar un caso de uso nuevo
 

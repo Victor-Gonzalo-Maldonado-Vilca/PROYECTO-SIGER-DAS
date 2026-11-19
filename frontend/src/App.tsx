@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, sesionGuardada } from './api/cliente';
+import Comprobantes from './paginas/Comprobantes';
 import Conformidades from './paginas/Conformidades';
 import Login from './paginas/Login';
 import VentasMoto from './paginas/VentasMoto';
@@ -9,6 +10,7 @@ import type { Usuario } from './tipos';
 const PANTALLAS = [
   { clave: 'ventas-moto', titulo: 'Venta de motos', modulo: 'MOD-04', componente: VentasMoto },
   { clave: 'conformidades', titulo: 'Conformidad de servicio', modulo: 'MOD-02', componente: Conformidades },
+  { clave: 'comprobantes', titulo: 'Comprobantes', modulo: 'MOD-08', componente: Comprobantes },
 ] as const;
 
 export default function App() {
@@ -67,7 +69,7 @@ export default function App() {
         </div>
       </header>
       <main>
-        {Pantalla ? <Pantalla key={actual.clave} /> : <p className="aviso">Su perfil no tiene módulos implementados todavía.</p>}
+        {Pantalla ? <Pantalla key={actual.clave} usuario={usuario} /> :<p className="aviso">Su perfil no tiene módulos implementados todavía.</p>}
       </main>
     </div>
   );

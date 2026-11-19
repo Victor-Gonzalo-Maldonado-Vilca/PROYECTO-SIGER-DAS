@@ -72,6 +72,33 @@ input:focus, select:focus { outline: 2px solid var(--primario); outline-offset: 
   border-radius: 8px; touch-action: none; cursor: crosshair;
 }
 .campo-firma.invalido canvas { border-color: var(--error-texto); }
+/* INT-018 */
+.busqueda { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+tr.seleccionada td { background: #fff3f4; }
+tbody tr { cursor: default; }
+td.ajustar { white-space: normal; }
+.vista-previa { border-color: var(--primario); }
+.vista-previa table { margin-top: 0.5rem; }
+.sunat-dev { font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem; }
+.sunat-dev select { padding: 0.3rem 0.5rem; }
+button.enlinea { margin-left: 0.75rem; padding: 0.25rem 0.7rem; }
+td button + button { margin-left: 0.4rem; }
+td button { padding: 0.3rem 0.7rem; font-size: 0.85rem; }
+.estado.EMITIDO { background: var(--exito-fondo); color: var(--exito-texto); }
+.estado.RECHAZADO { background: var(--error-fondo); color: var(--error-texto); }
+.fondo-modal {
+  position: fixed; inset: 0; background: #0008; display: grid; place-items: center; padding: 16px; z-index: 10;
+}
+.modal { background: #fff; border-radius: 8px; padding: 1.25rem; width: min(640px, 100%); max-height: 90vh; overflow: auto; }
+.documento-imprimible header { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.documento-imprimible header p { margin: 0.15rem 0; }
+.documento-imprimible .recuadro { border: 2px solid var(--texto); padding: 0.5rem 1rem; text-align: center; }
+@media print {
+  body * { visibility: hidden; }
+  .documento-imprimible, .documento-imprimible * { visibility: visible; }
+  .documento-imprimible { position: absolute; inset: 0; padding: 24px; }
+  .no-imprimir { display: none; }
+}
 .panel-firma .indicacion {
   position: absolute; inset: 0; display: grid; place-items: center; color: var(--sutil); pointer-events: none;
 }

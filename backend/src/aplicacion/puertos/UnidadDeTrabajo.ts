@@ -1,5 +1,10 @@
 import type { RepositorioAuditoria } from '../../dominio/auditoria/RepositorioAuditoria';
 import type {
+  RepositorioComprobantes,
+  RepositorioPendientes,
+  RepositorioTransaccionesFacturables,
+} from '../../dominio/comprobantes/repositorios';
+import type {
   RepositorioConformidades,
   RepositorioHistorialOrden,
   RepositorioOrdenesServicio,
@@ -16,6 +21,9 @@ export interface RepositoriosTransaccionales {
   ordenes: RepositorioOrdenesServicio;
   historialOrden: RepositorioHistorialOrden;
   conformidades: RepositorioConformidades;
+  transacciones: RepositorioTransaccionesFacturables;
+  comprobantes: RepositorioComprobantes;
+  pendientes: RepositorioPendientes;
   auditoria: RepositorioAuditoria;
 }
 

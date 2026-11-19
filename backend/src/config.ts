@@ -22,4 +22,9 @@ export const config = {
     expiraEn: process.env.JWT_EXPIRES_IN ?? '8h',
   },
   corsOrigen: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
+  esProduccion: process.env.NODE_ENV === 'production',
+  sunat: {
+    modoSimulado: process.env.SUNAT_SIMULADO_MODO ?? 'NORMAL',
+  },
+  jobIntervaloMs: Number(process.env.JOB_INTERVALO_MS ?? 15000),
 };
