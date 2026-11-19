@@ -1,0 +1,77 @@
+:root {
+  --fondo: #f4f5f7;
+  --superficie: #ffffff;
+  --texto: #1d2330;
+  --sutil: #667085;
+  --borde: #d9dde3;
+  --primario: #c8102e;
+  --primario-oscuro: #a00d25;
+  --exito-fondo: #e7f6ec;
+  --exito-texto: #1e6b3a;
+  --error-fondo: #fdecec;
+  --error-texto: #a1251b;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--texto);
+  background: var(--fondo);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+h1, h2, h3 { margin: 0 0 0.75rem; }
+
+.centrado { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+.sutil { color: var(--sutil); font-weight: normal; font-size: 0.85em; }
+
+.barra {
+  display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;
+  padding: 0.75rem 16px; background: var(--texto); color: #fff;
+}
+.barra nav { flex: 1; }
+.barra .activo { border-bottom: 2px solid var(--primario); padding-bottom: 2px; }
+.barra .usuario { display: flex; align-items: center; gap: 0.75rem; font-size: 0.9rem; }
+
+main { max-width: 1200px; margin: 0 auto; padding: 1.5rem 16px; }
+
+.tarjeta {
+  background: var(--superficie); border: 1px solid var(--borde); border-radius: 8px;
+  padding: 1.25rem; margin-bottom: 1.25rem;
+}
+.login { width: 100%; max-width: 360px; display: grid; gap: 0.9rem; }
+
+.encabezado { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.encabezado input { min-width: min(340px, 100%); }
+
+.rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+label { display: grid; gap: 0.35rem; font-size: 0.9rem; font-weight: 600; }
+label.invalido input { border-color: var(--error-texto); background: var(--error-fondo); }
+
+input {
+  font: inherit; padding: 0.55rem 0.7rem; border: 1px solid var(--borde); border-radius: 6px;
+  background: #fff; color: var(--texto);
+}
+input:focus { outline: 2px solid var(--primario); outline-offset: 1px; }
+
+button {
+  font: inherit; font-weight: 600; padding: 0.55rem 1.1rem; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--primario); background: var(--primario); color: #fff;
+}
+button:hover:not(:disabled) { background: var(--primario-oscuro); }
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+button.secundario { background: transparent; color: inherit; border-color: var(--borde); }
+.barra button.secundario { border-color: #fff6; }
+
+.acciones { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem; }
+
+.mensaje { padding: 0.65rem 0.9rem; border-radius: 6px; margin: 0.75rem 0; }
+.mensaje.exito { background: var(--exito-fondo); color: var(--exito-texto); }
+.mensaje.error { background: var(--error-fondo); color: var(--error-texto); }
+.aviso { color: var(--sutil); }
+
+.tabla-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+th, td { text-align: left; padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--borde); white-space: nowrap; }
+th { color: var(--sutil); font-weight: 600; }
+
+.estado { padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.8rem; background: #eef0f3; }
+.estado.CON_CLIENTE { background: #e6f0fb; color: #1f4f8a; }
+.estado.COMPROBANTE_EMITIDO { background: var(--exito-fondo); color: var(--exito-texto); }

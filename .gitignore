@@ -1,0 +1,26 @@
+# Dependencias
+node_modules/
+
+# Compilados
+dist/
+build/
+*.tsbuildinfo
+coverage/
+
+# Variables de entorno (contraseñas, claves JWT) - NUNCA subir
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editores / sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Configuracion local de Claude Code
+.claude/

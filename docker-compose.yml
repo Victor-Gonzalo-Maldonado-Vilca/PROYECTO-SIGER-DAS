@@ -1,0 +1,24 @@
+# Base de datos de desarrollo: PostgreSQL 15 (Vista Física v01.02, db_siger, puerto 5432)
+# Uso:  docker compose up -d      (crea la BD y ejecuta db/init/*.sql la primera vez)
+#       docker compose down -v    (borra la BD para empezar de cero)
+services:
+  db:
+    image: postgres:15
+    container_name: siger-db
+    environment:
+      POSTGRES_DB: db_siger
+      POSTGRES_USER: siger
+      POSTGRES_PASSWORD: siger_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - siger-db-data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U siger -d db_siger"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  siger-db-data:
