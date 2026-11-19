@@ -1,4 +1,4 @@
-import type { DataSource, EntityManager } from 'typeorm';
+import { Not, type DataSource, type EntityManager } from 'typeorm';
 import type { Moto } from '../../dominio/ventas/Moto';
 import type { EstadoVenta, VentaMoto } from '../../dominio/ventas/VentaMoto';
 import type {
@@ -9,6 +9,7 @@ import type {
   RepositorioVentasMoto,
   VentaMotoRegistrada,
   VentaParaAsociar,
+  VentaParaEdicion,
 } from '../../dominio/ventas/repositorios';
 import { traducirErrorBD } from '../erroresBD';
 import { MotoEsquema, VentaMotoEsquema } from '../esquemas';
@@ -17,12 +18,31 @@ import { MotoEsquema, VentaMotoEsquema } from '../esquemas';
 export class RepositorioMotosTypeORM implements RepositorioMotos {
   constructor(private readonly em: EntityManager) {}
 
-  existeNumeroMotor(numeroMotor: string): Promise<boolean> {
-    return this.em.getRepository(MotoEsquema).exists({ where: { numeroMotor } });
+  existeNumeroMotor(numeroMotor: string, excluirMotoId?: number): Promise<boolean> {
+    return this.em
+      .getRepository(MotoEsquema)
+      .exists({ where: { numeroMotor, ...(excluirMotoId ? { id: Not(excluirMotoId) } : {}) } });
   }
 
-  existeNumeroChasis(numeroChasis: string): Promise<boolean> {
-    return this.em.getRepository(MotoEsquema).exists({ where: { numeroChasis } });
+  existeNumeroChasis(numeroChasis: string, excluirMotoId?: number): Promise<boolean> {
+    return this.em
+      .getRepository(MotoEsquema)
+      .exists({ where: { numeroChasis, ...(excluirMotoId ? { id: Not(excluirMotoId) } : {}) } });
+  }
+
+  async actualizarDatos(motoId: number, moto: Moto): Promise<void> {
+    try {
+      await this.em.getRepository(MotoEsquema).update(motoId, {
+        marca: moto.datos.marca,
+        modelo: moto.datos.modelo,
+        anio: moto.datos.anio,
+        color: moto.datos.color,
+        numeroMotor: moto.datos.numeroMotor,
+        numeroChasis: moto.datos.numeroChasis,
+      });
+    } catch (error) {
+      throw traducirErrorBD(error); // índice único: otro usuario tomó ese motor/chasis a la vez
+    }
   }
 
   async guardar(moto: Moto): Promise<number> {
@@ -96,6 +116,36 @@ export class RepositorioVentasMotoTypeORM implements RepositorioVentasMoto {
     );
     if (!f) return null;
     return { id: Number(f.id), nroVenta: String(f.nro_venta), estado: f.estado as EstadoVenta, version: Number(f.version) };
+  }
+
+  async bloquearParaEdicion(ventaId: number): Promise<VentaParaEdicion | null> {
+    const [f]: Array<Record<string, unknown>> = await this.em.query(
+      `SELECT v.id, v.nro_venta, v.estado, v.version, v.moto_id,
+              EXISTS (SELECT 1 FROM tab_comprobante_oficial co
+                       WHERE co.tipo_transaccion = 'VENTA_MOTO' AND co.transaccion_id = v.id
+                         AND co.estado <> 'RECHAZADO') AS tiene_comprobante
+         FROM tab_venta_moto v
+        WHERE v.id = $1
+          FOR UPDATE OF v`,
+      [ventaId],
+    );
+    if (!f) return null;
+    return {
+      id: Number(f.id),
+      nroVenta: String(f.nro_venta),
+      estado: f.estado as EstadoVenta,
+      version: Number(f.version),
+      motoId: Number(f.moto_id),
+      tieneComprobante: Boolean(f.tiene_comprobante),
+    };
+  }
+
+  async actualizarPrecio(ventaId: number, precio: number): Promise<number> {
+    const [[f]]: [Array<Record<string, unknown>>, number] = await this.em.query(
+      `UPDATE tab_venta_moto SET precio = $2, version = version + 1 WHERE id = $1 RETURNING version`,
+      [ventaId, precio.toFixed(2)],
+    );
+    return Number(f.version);
   }
 
   async asociarCliente(ventaId: number, clienteId: number): Promise<number> {

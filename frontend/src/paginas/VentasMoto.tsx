@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { api, leerErrorApi, type ErrorApi } from '../api/cliente';
 import { AsociarCliente } from '../componentes/AsociarCliente';
-import type { EstadoVenta, FilaVentaMoto } from '../tipos';
+import type { EstadoVenta, FilaVentaMoto, Usuario } from '../tipos';
 
 /**
  * INT-012 — Gestión de Venta de Motos (EDU-0004).
@@ -31,8 +31,11 @@ const ETIQUETA_ESTADO: Record<EstadoVenta, string> = {
   COMPROBANTE_EMITIDO: 'Comprobante emitido',
 };
 
-export default function VentasMoto() {
+export default function VentasMoto({ usuario }: { usuario?: Usuario }) {
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  // CU-VEN-08: venta en edición (null = registro nuevo). Solo el Gerente puede editar.
+  const [editando, setEditando] = useState<FilaVentaMoto | null>(null);
+  const puedeEditar = usuario?.rol === 'GERENTE';
   const [form, setForm] = useState<Formulario>(VACIO);
   const [error, setError] = useState<ErrorApi | null>(null);
   const [exito, setExito] = useState<string | null>(null);
@@ -78,21 +81,45 @@ export default function VentasMoto() {
   const cancelar = () => {
     setForm(VACIO);
     setError(null);
+    setEditando(null);
     setMostrarFormulario(false);
   };
 
-  // BTN-01 Guardar
+  // CU-VEN-08 BTN-25 Editar: precarga INP-30 a INP-35 y el precio.
+  const abrirEdicion = (v: FilaVentaMoto) => {
+    setAsociando(null);
+    setExito(null);
+    setError(null);
+    setEditando(v);
+    setForm({
+      marca: v.marca,
+      modelo: v.modelo,
+      anio: String(v.anio),
+      color: v.color,
+      numeroMotor: v.numeroMotor,
+      numeroChasis: v.numeroChasis,
+      precio: v.precio == null ? '' : v.precio.toFixed(2),
+    });
+    setMostrarFormulario(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // BTN-01 Guardar (registro) / BTN-40 Guardar cambios (edición)
   const guardar = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     setExito(null);
     setGuardando(true);
+    const datos = { ...form, anio: form.anio === '' ? '' : Number(form.anio) };
     try {
-      const r = await api.post<{ mensaje: string; nroVenta: string }>('/ventas-moto', {
-        ...form,
-        anio: form.anio === '' ? '' : Number(form.anio),
-      });
-      setExito(`${r.data.mensaje} (${r.data.nroVenta}).`); // MSG-48
+      const r = editando
+        ? await api.put<{ mensaje: string; nroVenta: string }>(`/ventas-moto/${editando.id}`, {
+            ...datos,
+            version: editando.version,
+          })
+        : await api.post<{ mensaje: string; nroVenta: string }>('/ventas-moto', datos);
+      setExito(`${r.data.mensaje} (${r.data.nroVenta}).`); // MSG-48 / MSG-52
+      setEditando(null);
       setForm(VACIO);
       setMostrarFormulario(false);
       await cargarVentas(busqueda); // paso 9: actualiza TBL-12
@@ -123,7 +150,7 @@ export default function VentasMoto() {
 
       {mostrarFormulario && (
         <form className="tarjeta" onSubmit={guardar} noValidate>
-          <h3>Datos de la moto vendida</h3>
+          <h3>{editando ? `Editar venta ${editando.nroVenta}` : 'Datos de la moto vendida'}</h3>
           <div className="rejilla">
             {CAMPOS.map(({ campo, id, etiqueta, tipo, ayuda }) => (
               <label key={campo} className={error?.campo === campo ? 'invalido' : ''}>
@@ -150,7 +177,7 @@ export default function VentasMoto() {
               Cancelar
             </button>
             <button type="submit" disabled={guardando}>
-              {guardando ? 'Guardando…' : 'Guardar'}
+              {guardando ? 'Guardando…' : editando ? 'Guardar cambios' : 'Guardar'}
             </button>
           </div>
         </form>
@@ -226,6 +253,16 @@ export default function VentasMoto() {
                       <span className={`estado ${v.estado}`}>{ETIQUETA_ESTADO[v.estado]}</span>
                     </td>
                     <td>
+                      {/* CU-VEN-08 BTN-25 Editar: solo Gerente y sin comprobante (RN-VEN-12) */}
+                      {puedeEditar && v.estado !== 'COMPROBANTE_EMITIDO' && (
+                        <button
+                          className="secundario"
+                          disabled={mostrarFormulario || asociando !== null}
+                          onClick={() => abrirEdicion(v)}
+                        >
+                          Editar
+                        </button>
+                      )}
                       {/* BTN-23 Asociar cliente */}
                       {v.estado === 'SIN_CLIENTE' && (
                         <button

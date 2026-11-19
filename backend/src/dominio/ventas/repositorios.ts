@@ -6,8 +6,11 @@ import type { EstadoVenta, VentaMoto } from './VentaMoto';
  * El dominio no depende de TypeORM ni de PostgreSQL (Clean Architecture).
  */
 export interface RepositorioMotos {
-  existeNumeroMotor(numeroMotor: string): Promise<boolean>;
-  existeNumeroChasis(numeroChasis: string): Promise<boolean>;
+  /** excluirMotoId: en la edición (CU-VEN-08) no se compara la moto consigo misma. */
+  existeNumeroMotor(numeroMotor: string, excluirMotoId?: number): Promise<boolean>;
+  existeNumeroChasis(numeroChasis: string, excluirMotoId?: number): Promise<boolean>;
+  /** CU-VEN-08 paso 8: actualiza los datos técnicos de la moto vendida. */
+  actualizarDatos(motoId: number, moto: Moto): Promise<void>;
   /** Inserta en Tab_moto y devuelve el id generado. */
   guardar(moto: Moto): Promise<number>;
   /** ILA-0001: busca la moto por placa y bloquea su fila (FOR UPDATE). */
@@ -39,6 +42,16 @@ export interface RepositorioVentasMoto {
   bloquear(ventaId: number): Promise<VentaParaAsociar | null>;
   /** ILA-0017 paso 8: guarda la FK del cliente y pasa la venta a CON_CLIENTE. Devuelve la nueva versión. */
   asociarCliente(ventaId: number, clienteId: number): Promise<number>;
+  /** CU-VEN-08: lee la venta con FOR UPDATE, con su moto y si ya tiene comprobante. */
+  bloquearParaEdicion(ventaId: number): Promise<VentaParaEdicion | null>;
+  /** CU-VEN-08 paso 8: actualiza el precio e incrementa la versión. */
+  actualizarPrecio(ventaId: number, precio: number): Promise<number>;
+}
+
+export interface VentaParaEdicion extends VentaParaAsociar {
+  motoId: number;
+  /** Comprobante vigente (GENERADO o EMITIDO): la venta ya no puede editarse. */
+  tieneComprobante: boolean;
 }
 
 /** Fila de TBL-12: cliente encontrado en la búsqueda de ILA-0017. */

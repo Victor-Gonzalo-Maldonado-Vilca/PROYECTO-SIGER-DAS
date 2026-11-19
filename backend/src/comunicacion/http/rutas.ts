@@ -11,6 +11,7 @@ import type { RegistrarConformidadServicio } from '../../aplicacion/ordenes/Regi
 import type { IniciarSesion } from '../../aplicacion/seguridad/IniciarSesion';
 import type { ListarVentasMoto } from '../../aplicacion/ventas/ListarVentasMoto';
 import type { AsociarClienteVentaMoto } from '../../aplicacion/ventas/AsociarClienteVentaMoto';
+import type { EditarVentaMoto } from '../../aplicacion/ventas/EditarVentaMoto';
 import type { RegistrarVentaMoto } from '../../aplicacion/ventas/RegistrarVentaMoto';
 import { Modulos } from '../../dominio/seguridad/permisos';
 import type { ServicioTokenJwt } from '../seguridad/adaptadores';
@@ -25,6 +26,7 @@ export interface CasosDeUso {
   registrarVentaMoto: RegistrarVentaMoto;
   listarVentasMoto: ListarVentasMoto;
   asociarCliente: AsociarClienteVentaMoto;
+  editarVentaMoto: EditarVentaMoto;
   registrarOrden: RegistrarOrdenServicio;
   actualizarOrden: ActualizarOrdenServicio;
   consultarOrdenes: ConsultarOrdenes;
@@ -76,6 +78,16 @@ export function crearRutas(casos: CasosDeUso, tokens: ServicioTokenJwt): Router 
       const texto = typeof req.query.q === 'string' ? req.query.q : undefined;
       res.json(await casos.listarVentasMoto.buscarClientes(req.usuario, texto));
     }),
+  );
+
+  // CU-VEN-08: BTN-40 Guardar cambios (solo Gerente; el caso de uso lo verifica)
+  r.put(
+    '/ventas-moto/:id',
+    conSesion,
+    requiereModulo(Modulos.VENTAS),
+    async(async (req, res) =>
+      res.json(await casos.editarVentaMoto.ejecutar(Number(req.params.id), req.body ?? {}, req.usuario)),
+    ),
   );
 
   // ILA-0017: BTN-24 Confirmar asociación

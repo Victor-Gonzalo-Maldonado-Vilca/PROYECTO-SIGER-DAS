@@ -17,6 +17,7 @@ import { RegistrarConformidadServicio } from './aplicacion/ordenes/RegistrarConf
 import { IniciarSesion } from './aplicacion/seguridad/IniciarSesion';
 import { ListarVentasMoto } from './aplicacion/ventas/ListarVentasMoto';
 import { AsociarClienteVentaMoto } from './aplicacion/ventas/AsociarClienteVentaMoto';
+import { EditarVentaMoto } from './aplicacion/ventas/EditarVentaMoto';
 import { RegistrarVentaMoto } from './aplicacion/ventas/RegistrarVentaMoto';
 import { crearApp } from './comunicacion/http/app';
 import { ServicioHashBcrypt, ServicioTokenJwt } from './comunicacion/seguridad/adaptadores';
@@ -53,6 +54,7 @@ async function iniciar() {
       registrarVentaMoto: new RegistrarVentaMoto(uow),
       listarVentasMoto: new ListarVentasMoto(new ConsultaVentasMotoTypeORM(ds)),
       asociarCliente: new AsociarClienteVentaMoto(uow),
+      editarVentaMoto: new EditarVentaMoto(uow),
       registrarOrden: new RegistrarOrdenServicio(uow),
       actualizarOrden: new ActualizarOrdenServicio(uow),
       consultarOrdenes: new ConsultarOrdenes(new ConsultaOrdenesTypeORM(ds)),

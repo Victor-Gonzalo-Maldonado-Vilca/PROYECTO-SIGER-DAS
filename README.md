@@ -93,6 +93,7 @@ npm run typecheck
 | CU-TAL-03 | Actualizar avance y estado de la orden: máquina de estados, trazabilidad y bloqueo optimista por versión (RNF-0008) | ✅ |
 | ILA-0012 + precio | Precio de venta obligatorio (IGV incluido). **Adición al catálogo**: ILA-0012 no lo pide, pero ILA-0018 necesita el monto | ✅ |
 | ILA-0012 | Registrar venta de moto: transacción atómica Tab_moto + Tab_venta_moto + auditoría | ✅ |
+| CU-VEN-08 | Actualizar venta de moto (solo Gerente): datos, motor/chasis únicos excluyendo la propia moto, precio; bloqueada con comprobante (MSG-51) | ✅ |
 | ILA-0017 | Asociar cliente a venta de moto (CU-VEN-10): búsqueda por DNI/RUC/nombre, solo clientes fiscales, SIN_CLIENTE → CON_CLIENTE con bloqueo optimista | ✅ |
 | ILA-0075 | Conformidad de servicio con firma PAD-01: INSERT tab_CS + UPDATE tab_OS + historial en una transacción | ✅ |
 | ILA-0018 | Emitir boleta a persona natural: outbox, job de reintentos, conciliación y correlativo sin huecos (PRO-03 y PRO-04), con SUNAT simulada | ✅ |

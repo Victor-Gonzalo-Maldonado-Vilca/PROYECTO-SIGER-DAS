@@ -1,6 +1,8 @@
 import type { DataSource } from 'typeorm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AsociarClienteVentaMoto } from '../aplicacion/ventas/AsociarClienteVentaMoto';
+import { EditarVentaMoto } from '../aplicacion/ventas/EditarVentaMoto';
+import { ErrorAutorizacion } from '../dominio/compartido/errores';
 import { RegistrarVentaMoto } from '../aplicacion/ventas/RegistrarVentaMoto';
 import { ConsultaComprobantesTypeORM } from './repositorios/comprobantes';
 import { ConsultaVentasMotoTypeORM } from './repositorios/ventas';
@@ -38,7 +40,7 @@ async function limpiar() {
        AND entidad_id IN (SELECT id FROM tab_venta_moto WHERE moto_id IN (${ids}))`,
   );
   await ds.query(
-    `DELETE FROM tab_auditoria WHERE accion = 'ASOCIAR_CLIENTE_VENTA_MOTO'
+    `DELETE FROM tab_auditoria WHERE accion IN ('ASOCIAR_CLIENTE_VENTA_MOTO', 'EDITAR_VENTA_MOTO')
        AND entidad_id IN (SELECT id FROM tab_venta_moto WHERE moto_id IN (${ids}))`,
   );
   await ds.query(`DELETE FROM tab_venta_moto WHERE moto_id IN (${ids})`);
@@ -99,6 +101,73 @@ describe('ILA-0012 contra db_siger', () => {
     expect(fallos).toHaveLength(1);
     expect(fallos[0].reason).toMatchObject({ codigo: 'MSG-46' });
     expect(await contarMotos()).toBe(antes + 1);
+  });
+});
+
+describe('CU-VEN-08 Actualizar venta de motocicleta', () => {
+  let contador = 0;
+  const registrar = async () => {
+    contador += 1;
+    return (await new RegistrarVentaMoto(new UnidadDeTrabajoTypeORM(ds)).ejecutar(moto(`ED-${contador}`), usuario)).ventaId;
+  };
+  const versionDe = async (id: number) =>
+    Number((await ds.query(`SELECT version FROM tab_venta_moto WHERE id = $1`, [id]))[0].version);
+  const editar = (ventaId: number, version: number, cambios: Record<string, unknown> = {}, quien = usuario) =>
+    new EditarVentaMoto(new UnidadDeTrabajoTypeORM(ds)).ejecutar(
+      ventaId,
+      { ...moto(`ED-EDIT-${ventaId}`), marca: 'Editada', precio: '7250.40', version, ...cambios },
+      quien,
+    );
+
+  it('actualiza moto y precio en una transacción y responde MSG-52', async () => {
+    const ventaId = await registrar();
+    const r = await editar(ventaId, await versionDe(ventaId));
+
+    expect(r.codigo).toBe('MSG-52');
+    const [f] = await ds.query(
+      `SELECT v.precio, v.version, m.marca, m.numero_motor FROM tab_venta_moto v JOIN tab_moto m ON m.id = v.moto_id WHERE v.id = $1`,
+      [ventaId],
+    );
+    expect(f).toMatchObject({ precio: '7250.40', marca: 'Editada', numero_motor: `IT-MOT-ED-EDIT-${ventaId}` });
+    expect(Number(f.version)).toBe(r.version);
+  });
+
+  it('permite guardar sin cambiar motor ni chasis (no choca consigo misma)', async () => {
+    const ventaId = await registrar();
+    const [m] = await ds.query(
+      `SELECT m.numero_motor, m.numero_chasis FROM tab_venta_moto v JOIN tab_moto m ON m.id = v.moto_id WHERE v.id = $1`,
+      [ventaId],
+    );
+    await expect(
+      editar(ventaId, await versionDe(ventaId), { numeroMotor: m.numero_motor, numeroChasis: m.numero_chasis }),
+    ).resolves.toMatchObject({ codigo: 'MSG-52' });
+  });
+
+  it('MSG-46 si el nuevo N.° de motor pertenece a otra moto', async () => {
+    const [a, b] = [await registrar(), await registrar()];
+    const [{ numero_motor }] = await ds.query(
+      `SELECT m.numero_motor FROM tab_venta_moto v JOIN tab_moto m ON m.id = v.moto_id WHERE v.id = $1`,
+      [a],
+    );
+    await expect(editar(b, await versionDe(b), { numeroMotor: numero_motor })).rejects.toMatchObject({ codigo: 'MSG-46' });
+  });
+
+  it('MSG-51: una venta con comprobante emitido no se edita (RN-VEN-12)', async () => {
+    const ventaId = await registrar();
+    await ds.query(`UPDATE tab_venta_moto SET estado = 'COMPROBANTE_EMITIDO', cliente_id = (SELECT MIN(id) FROM tab_cliente) WHERE id = $1`, [ventaId]);
+    await expect(editar(ventaId, await versionDe(ventaId))).rejects.toMatchObject({ codigo: 'MSG-51' });
+  });
+
+  it('solo el Gerente puede editar; con versión vieja se rechaza', async () => {
+    const ventaId = await registrar();
+    const vendedor = { ...usuario, rol: Rol.VENDEDOR };
+    await expect(editar(ventaId, await versionDe(ventaId), {}, vendedor)).rejects.toBeInstanceOf(ErrorAutorizacion);
+
+    const vista = await versionDe(ventaId);
+    await editar(ventaId, vista, { precio: '7000' });
+    await expect(editar(ventaId, vista, { precio: '6000' })).rejects.toMatchObject({ codigo: 'VENTA-MODIFICADA' });
+    const [{ precio }] = await ds.query(`SELECT precio FROM tab_venta_moto WHERE id = $1`, [ventaId]);
+    expect(precio).toBe('7000.00');
   });
 });
 
