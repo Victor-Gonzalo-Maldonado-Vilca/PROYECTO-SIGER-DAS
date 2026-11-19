@@ -70,6 +70,7 @@ const datosValidos = {
   color: 'Rojo',
   numeroMotor: 'mot-001',
   numeroChasis: 'CHS-001',
+  precio: '8490.50',
 };
 
 describe('ILA-0012 Registrar venta de moto', () => {
@@ -128,6 +129,14 @@ describe('ILA-0012 Registrar venta de moto', () => {
     const mecanico = { ...vendedor, rol: Rol.MECANICO, modulos: [Modulos.ORDENES_SERVICIO] };
     await expect(casoDeUso.ejecutar(datosValidos, mecanico)).rejects.toBeInstanceOf(ErrorAutorizacion);
     await expect(casoDeUso.ejecutar(datosValidos, undefined)).rejects.toBeInstanceOf(ErrorAutorizacion);
+  });
+
+  it('MSG-45 si falta el precio y no registra nada', async () => {
+    await expect(casoDeUso.ejecutar({ ...datosValidos, precio: '' }, vendedor)).rejects.toMatchObject({
+      codigo: 'MSG-45',
+      campo: 'precio',
+    });
+    expect(bd.motos).toHaveLength(0);
   });
 
   it('valida que el año sea un entero razonable', async () => {

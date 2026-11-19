@@ -77,7 +77,7 @@ export class RepositorioVentasMotoTypeORM implements RepositorioVentasMoto {
         .createQueryBuilder()
         .insert()
         .into(VentaMotoEsquema)
-        .values({ motoId, usuarioId: venta.registradaPor, estado: venta.estado })
+        .values({ motoId, usuarioId: venta.registradaPor, estado: venta.estado, precio: venta.precio.toFixed(2) })
         // Nombres de PROPIEDAD del EntitySchema; TypeORM los traduce a columnas.
         // En result.raw llegan con el nombre de la columna (nro_venta).
         .returning(['id', 'nroVenta', 'fecha'])
@@ -135,7 +135,7 @@ export class ConsultaVentasMotoTypeORM implements ConsultaVentasMoto {
 
   async listar(filtro?: { texto?: string; soloSinCliente?: boolean }): Promise<FilaVentaMoto[]> {
     const filas: Array<Record<string, unknown>> = await this.ds.query(
-      `SELECT v.id, v.nro_venta, v.fecha, v.estado, v.version,
+      `SELECT v.id, v.nro_venta, v.fecha, v.estado, v.version, v.precio,
               m.marca, m.modelo, m.anio, m.color, m.numero_motor, m.numero_chasis,
               c.nombre_razon_social AS cliente
          FROM tab_venta_moto v
@@ -167,6 +167,7 @@ export class ConsultaVentasMotoTypeORM implements ConsultaVentasMoto {
       numeroChasis: String(f.numero_chasis),
       cliente: (f.cliente as string | null) ?? null,
       version: Number(f.version),
+      precio: f.precio == null ? null : Number(f.precio),
     }));
   }
 }

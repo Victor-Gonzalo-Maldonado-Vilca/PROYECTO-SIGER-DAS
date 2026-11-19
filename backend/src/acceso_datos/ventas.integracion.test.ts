@@ -2,6 +2,7 @@ import type { DataSource } from 'typeorm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AsociarClienteVentaMoto } from '../aplicacion/ventas/AsociarClienteVentaMoto';
 import { RegistrarVentaMoto } from '../aplicacion/ventas/RegistrarVentaMoto';
+import { ConsultaComprobantesTypeORM } from './repositorios/comprobantes';
 import { ConsultaVentasMotoTypeORM } from './repositorios/ventas';
 import { Modulos, Rol, type UsuarioAutenticado } from '../dominio/seguridad/permisos';
 import { Moto } from '../dominio/ventas/Moto';
@@ -27,6 +28,7 @@ const moto = (sufijo: string) => ({
   color: 'Negro',
   numeroMotor: `${PREFIJO}MOT-${sufijo}`,
   numeroChasis: `${PREFIJO}CHS-${sufijo}`,
+  precio: '6990.00',
 });
 
 async function limpiar() {
@@ -165,6 +167,17 @@ describe('ILA-0017 / CU-VEN-10 Asociar cliente a venta de moto', () => {
     const res = await Promise.allSettled([asociar(ventaId, clienteDni, version), asociar(ventaId, clienteDni, version)]);
     expect(res.filter((x) => x.status === 'fulfilled')).toHaveLength(1);
     expect(await versionDe(ventaId)).toBe(version + 1);
+  });
+
+  it('flujo completo: venta con precio + cliente con DNI -> aparece en TBL-19 para emitir boleta', async () => {
+    const ventaId = await nuevaVenta();
+    const comprobantes = new ConsultaComprobantesTypeORM(ds);
+    const antes = await comprobantes.transaccionesPendientesBoleta();
+    expect(antes.find((t) => t.tipo === 'VENTA_MOTO' && t.id === ventaId)).toBeUndefined(); // aún sin cliente
+
+    await asociar(ventaId, clienteDni, await versionDe(ventaId));
+    const despues = await comprobantes.transaccionesPendientesBoleta();
+    expect(despues.find((t) => t.tipo === 'VENTA_MOTO' && t.id === ventaId)).toMatchObject({ total: 6990, documento: '99999904' });
   });
 
   it('la búsqueda encuentra al cliente por DNI y por nombre; el listado filtra las ventas sin cliente', async () => {

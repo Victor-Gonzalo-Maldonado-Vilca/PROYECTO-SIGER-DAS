@@ -1,3 +1,5 @@
+import { ErrorDominio } from '../compartido/errores';
+
 /**
  * Entidad VentaMoto (Vista Lógica, MOD-04, Fig. 6).
  *
@@ -12,15 +14,39 @@ export enum EstadoVenta {
   COMPROBANTE_EMITIDO = 'COMPROBANTE_EMITIDO',
 }
 
+/** Precio máximo razonable de una moto (evita errores de digitación como 549000). */
+const PRECIO_MAXIMO = 200_000;
+
+/**
+ * Precio de venta en soles, con IGV incluido (ILA-0018 lo separa al emitir la boleta).
+ * ADICIÓN al catálogo: ILA-0012 / CU-VEN-06 no capturan el precio, pero el comprobante
+ * (ILA-0018) necesita un monto. Pendiente de registrar en el catálogo actualizado.
+ */
+export function validarPrecioVenta(valor: unknown): number {
+  const texto = typeof valor === 'string' ? valor.trim().replace(',', '.') : valor;
+  if (texto === undefined || texto === null || texto === '') {
+    throw new ErrorDominio('MSG-45', 'Campo obligatorio vacío: Precio de venta', 'precio');
+  }
+  const precio = Number(texto);
+  if (!Number.isFinite(precio) || precio <= 0 || precio > PRECIO_MAXIMO) {
+    throw new ErrorDominio('VAL-PRECIO', `El precio debe ser mayor que 0 y menor o igual a S/ ${PRECIO_MAXIMO.toLocaleString('es-PE')}.`, 'precio');
+  }
+  if (Math.round(precio * 100) !== Math.round(precio * 100 * 1000) / 1000) {
+    throw new ErrorDominio('VAL-PRECIO', 'El precio admite como máximo 2 decimales.', 'precio');
+  }
+  return Math.round(precio * 100) / 100;
+}
+
 export class VentaMoto {
   private constructor(
     readonly estado: EstadoVenta,
     readonly registradaPor: number,
+    readonly precio: number,
   ) {}
 
   /** ILA-0012: la venta nace sin cliente; el cliente se asocia en ILA-0017. */
-  static registrar(usuarioId: number): VentaMoto {
-    return new VentaMoto(EstadoVenta.SIN_CLIENTE, usuarioId);
+  static registrar(usuarioId: number, precio: number): VentaMoto {
+    return new VentaMoto(EstadoVenta.SIN_CLIENTE, usuarioId, precio);
   }
 
   static esModificable(estado: EstadoVenta): boolean {

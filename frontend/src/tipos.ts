@@ -24,4 +24,6 @@ export interface FilaVentaMoto {
   cliente: string | null;
   /** Bloqueo optimista */
   version: number;
+  /** null en ventas registradas antes de capturar el precio */
+  precio: number | null;
 }

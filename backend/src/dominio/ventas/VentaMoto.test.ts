@@ -1,5 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { EstadoVenta, motivoNoAsociable, type ClienteComprador } from './VentaMoto';
+import { EstadoVenta, motivoNoAsociable, validarPrecioVenta, type ClienteComprador } from './VentaMoto';
+
+describe('Precio de venta de la moto (adición al catálogo para ILA-0018)', () => {
+  it.each([
+    ['5490', 5490],
+    ['5490.5', 5490.5],
+    ['5 490,50'.replace(' ', ''), 5490.5],
+    [8490.99, 8490.99],
+  ])('acepta %s', (entrada, esperado) => expect(validarPrecioVenta(entrada)).toBe(esperado));
+
+  it.each([
+    ['', 'MSG-45'],
+    [undefined, 'MSG-45'],
+    ['0', 'VAL-PRECIO'],
+    ['-100', 'VAL-PRECIO'],
+    ['abc', 'VAL-PRECIO'],
+    ['5490.555', 'VAL-PRECIO'],
+    ['999999', 'VAL-PRECIO'],
+  ])('rechaza %s con %s', (entrada, codigo) => {
+    expect(() => validarPrecioVenta(entrada)).toThrow(expect.objectContaining({ codigo, campo: 'precio' }));
+  });
+});
 
 const cliente: ClienteComprador = {
   id: 1,

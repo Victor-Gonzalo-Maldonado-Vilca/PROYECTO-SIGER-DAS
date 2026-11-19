@@ -1,7 +1,7 @@
 import { ErrorConflicto } from '../../dominio/compartido/errores';
 import { Modulos, type UsuarioAutenticado } from '../../dominio/seguridad/permisos';
 import { Moto, type DatosMoto } from '../../dominio/ventas/Moto';
-import { VentaMoto } from '../../dominio/ventas/VentaMoto';
+import { validarPrecioVenta, VentaMoto } from '../../dominio/ventas/VentaMoto';
 import type { UnidadDeTrabajo } from '../puertos/UnidadDeTrabajo';
 import { autorizar } from '../seguridad/autorizar';
 
@@ -31,13 +31,14 @@ export class RegistrarVentaMoto {
   constructor(private readonly uow: UnidadDeTrabajo) {}
 
   async ejecutar(
-    entrada: Partial<Record<keyof DatosMoto, unknown>>,
+    entrada: Partial<Record<keyof DatosMoto | 'precio', unknown>>,
     usuarioSesion: UsuarioAutenticado | undefined,
   ): Promise<ResultadoRegistroVentaMoto> {
     const usuario = autorizar(usuarioSesion, Modulos.VENTAS);
 
     // Paso 5: validación de dominio (MSG-45) antes de abrir la transacción.
     const moto = Moto.crear(entrada);
+    const precio = validarPrecioVenta(entrada.precio); // adición al catálogo (necesario para ILA-0018)
 
     return this.uow.ejecutar(async (repos) => {
       // Pasos 6 y 7: verificación de unicidad (los índices únicos la refuerzan ante concurrencia).
@@ -50,7 +51,7 @@ export class RegistrarVentaMoto {
 
       // Paso 8: ambas inserciones dentro de la misma transacción.
       const motoId = await repos.motos.guardar(moto);
-      const venta = VentaMoto.registrar(usuario.id);
+      const venta = VentaMoto.registrar(usuario.id, precio);
       const registrada = await repos.ventasMoto.guardar(venta, motoId);
 
       await repos.auditoria.registrar({

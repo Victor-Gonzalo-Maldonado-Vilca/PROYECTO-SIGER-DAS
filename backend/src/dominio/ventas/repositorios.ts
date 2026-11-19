@@ -65,6 +65,8 @@ export interface FilaVentaMoto {
   numeroChasis: string;
   cliente: string | null;
   version: number;
+  /** null en ventas registradas antes de capturar el precio. */
+  precio: number | null;
 }
 
 export interface ConsultaVentasMoto {

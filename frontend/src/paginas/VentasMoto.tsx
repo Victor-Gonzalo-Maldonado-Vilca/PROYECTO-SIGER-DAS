@@ -9,17 +9,21 @@ import type { EstadoVenta, FilaVentaMoto } from '../tipos';
  * y listado de ventas TBL-12.
  */
 
-const VACIO = { marca: '', modelo: '', anio: '', color: '', numeroMotor: '', numeroChasis: '' };
+const VACIO = { marca: '', modelo: '', anio: '', color: '', numeroMotor: '', numeroChasis: '', precio: '' };
 type Formulario = typeof VACIO;
 
-const CAMPOS: Array<{ campo: keyof Formulario; id: string; etiqueta: string; tipo?: string }> = [
+const CAMPOS: Array<{ campo: keyof Formulario; id: string; etiqueta: string; tipo?: string; ayuda?: string }> = [
   { campo: 'marca', id: 'INP-30', etiqueta: 'Marca' },
   { campo: 'modelo', id: 'INP-31', etiqueta: 'Modelo' },
   { campo: 'anio', id: 'INP-32', etiqueta: 'Año', tipo: 'number' },
   { campo: 'color', id: 'INP-33', etiqueta: 'Color' },
   { campo: 'numeroMotor', id: 'INP-34', etiqueta: 'N.° de motor' },
   { campo: 'numeroChasis', id: 'INP-35', etiqueta: 'N.° de chasis' },
+  // Adición al catálogo: ILA-0012 no lo pide, pero la boleta (ILA-0018) necesita el monto.
+  { campo: 'precio', id: 'nuevo', etiqueta: 'Precio de venta (S/, IGV incluido)', ayuda: 'Ej.: 5490.00' },
 ];
+
+const soles = (n: number) => `S/ ${n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const ETIQUETA_ESTADO: Record<EstadoVenta, string> = {
   SIN_CLIENTE: 'Sin cliente',
@@ -121,11 +125,13 @@ export default function VentasMoto() {
         <form className="tarjeta" onSubmit={guardar} noValidate>
           <h3>Datos de la moto vendida</h3>
           <div className="rejilla">
-            {CAMPOS.map(({ campo, id, etiqueta, tipo }) => (
+            {CAMPOS.map(({ campo, id, etiqueta, tipo, ayuda }) => (
               <label key={campo} className={error?.campo === campo ? 'invalido' : ''}>
                 {etiqueta} <span className="sutil">({id})</span>
                 <input
                   type={tipo ?? 'text'}
+                  placeholder={ayuda}
+                  inputMode={campo === 'precio' ? 'decimal' : undefined}
                   value={form[campo]}
                   onChange={(e) => setForm({ ...form, [campo]: e.target.value })}
                   aria-invalid={error?.campo === campo}
@@ -185,6 +191,7 @@ export default function VentasMoto() {
                 <th>Color</th>
                 <th>N.° motor</th>
                 <th>N.° chasis</th>
+                <th>Precio</th>
                 <th>Cliente</th>
                 <th>Estado</th>
                 <th></th>
@@ -193,7 +200,7 @@ export default function VentasMoto() {
             <tbody>
               {ventas.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="sutil">
+                  <td colSpan={11} className="sutil">
                     {soloSinCliente
                       ? 'MSG-56: No existen ventas pendientes de asociación de cliente en el sistema.'
                       : 'No hay ventas registradas.'}
@@ -211,6 +218,9 @@ export default function VentasMoto() {
                     <td>{v.color}</td>
                     <td>{v.numeroMotor}</td>
                     <td>{v.numeroChasis}</td>
+                    <td title={v.precio == null ? 'Venta registrada antes de capturar el precio: no se puede facturar' : ''}>
+                      {v.precio == null ? <span className="sutil">Sin precio</span> : soles(v.precio)}
+                    </td>
                     <td>{v.cliente ?? '—'}</td>
                     <td>
                       <span className={`estado ${v.estado}`}>{ETIQUETA_ESTADO[v.estado]}</span>
