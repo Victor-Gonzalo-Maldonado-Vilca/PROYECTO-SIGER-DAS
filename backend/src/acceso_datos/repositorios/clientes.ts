@@ -1,5 +1,6 @@
 import type { EntityManager } from 'typeorm';
 import type { DatosClienteRecepcion, RepositorioClientes } from '../../dominio/clientes/repositorios';
+import type { ClienteComprador } from '../../dominio/ventas/VentaMoto';
 
 type Fila = Record<string, unknown>;
 
@@ -35,5 +36,30 @@ export class RepositorioClientesTypeORM implements RepositorioClientes {
       [d.nombre, d.telefono],
     );
     return Number(nuevo.id);
+  }
+
+  async obtenerComprador(clienteId: number): Promise<ClienteComprador | null> {
+    // FOR SHARE: el cliente no puede borrarse ni modificarse hasta el COMMIT de la asociación.
+    const [f]: Fila[] = await this.em.query(
+      `SELECT id, nombre_razon_social, tipo_documento, numero_documento, estado
+         FROM tab_cliente WHERE id = $1 FOR SHARE`,
+      [clienteId],
+    );
+    if (!f) return null;
+    return {
+      id: Number(f.id),
+      nombre: String(f.nombre_razon_social),
+      tipoDocumento: (f.tipo_documento as 'DNI' | 'RUC' | null) ?? null,
+      numeroDocumento: (f.numero_documento as string | null) ?? null,
+      estado: f.estado as 'ACTIVO' | 'INACTIVO',
+    };
+  }
+
+  async actualizarContacto(clienteId: number, nombre: string, telefono: string): Promise<void> {
+    await this.em.query(`UPDATE tab_cliente SET nombre_razon_social = $2, telefono = $3 WHERE id = $1`, [
+      clienteId,
+      nombre,
+      telefono,
+    ]);
   }
 }

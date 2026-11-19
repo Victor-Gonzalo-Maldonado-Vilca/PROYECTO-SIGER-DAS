@@ -27,3 +27,31 @@ export class VentaMoto {
     return estado !== EstadoVenta.COMPROBANTE_EMITIDO;
   }
 }
+
+/** Cliente candidato a comprador (datos mínimos para validar la asociación). */
+export interface ClienteComprador {
+  id: number;
+  nombre: string;
+  tipoDocumento: 'DNI' | 'RUC' | null;
+  numeroDocumento: string | null;
+  estado: 'ACTIVO' | 'INACTIVO';
+}
+
+/**
+ * Reglas de ILA-0017 / CU-VEN-10 «Asociar cliente a venta de moto».
+ *  - Precondición 2: la venta debe estar SIN_CLIENTE (diagrama de estados: SinCliente -> ConCliente).
+ *  - RN-VEN-15: el comprador debe ser un cliente FISCAL (con DNI o RUC) para poder
+ *    emitir después el comprobante. Un cliente registrado en el taller sin documento
+ *    no se acepta (decisión pendiente de confirmar en el catálogo).
+ *  - Un cliente dado de baja (INACTIVO) no puede asociarse.
+ * Devuelve el motivo si no se puede asociar, o null.
+ */
+export function motivoNoAsociable(estadoVenta: EstadoVenta, cliente: ClienteComprador): string | null {
+  if (estadoVenta === EstadoVenta.COMPROBANTE_EMITIDO) return 'la venta ya tiene un comprobante emitido';
+  if (estadoVenta !== EstadoVenta.SIN_CLIENTE) return 'la venta ya tiene un cliente asociado';
+  if (cliente.estado !== 'ACTIVO') return `el cliente ${cliente.nombre} está dado de baja`;
+  if (!cliente.tipoDocumento) {
+    return `el cliente ${cliente.nombre} no tiene DNI ni RUC registrado; complete sus datos fiscales en Clientes (MOD-05)`;
+  }
+  return null;
+}

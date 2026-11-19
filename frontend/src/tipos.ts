@@ -22,4 +22,6 @@ export interface FilaVentaMoto {
   numeroMotor: string;
   numeroChasis: string;
   cliente: string | null;
+  /** Bloqueo optimista */
+  version: number;
 }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { api, leerErrorApi, type ErrorApi } from '../api/cliente';
+import EditarOrden from './EditarOrden';
 
 /**
  * INT-001 — Registro de Orden de Servicio (ILA-0001, EDU-0001, CU-TAL-01).
@@ -52,6 +53,25 @@ export default function OrdenesServicio() {
   const [guardando, setGuardando] = useState(false);
   const [ordenes, setOrdenes] = useState<FilaOrden[]>([]);
   const [busqueda, setBusqueda] = useState('');
+  // CU-TAL-03: orden en edición (INT-003) y confirmación LBL-01 de la edición
+  const [editando, setEditando] = useState<number | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+
+  const editar = (id: number) => {
+    setAbierto(false);
+    setExito(null);
+    setAviso(null);
+    setEditando(id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cerrarEdicion = (mensaje?: string) => {
+    setEditando(null);
+    if (mensaje) {
+      setAviso(mensaje);
+      void cargar(busqueda.trim());
+    }
+  };
 
   const cargar = useCallback(async (q = '') => {
     try {
@@ -119,8 +139,11 @@ export default function OrdenesServicio() {
     <section>
       <div className="encabezado">
         <h2>Órdenes de servicio</h2>
-        {!abierto && <button onClick={() => void nuevo()}>Nueva orden</button>}
+        {!abierto && editando === null && <button onClick={() => void nuevo()}>Nueva orden</button>}
       </div>
+
+      {aviso && <p className="mensaje exito">{aviso}</p>}
+      {editando !== null && <EditarOrden key={editando} ordenId={editando} alCerrar={cerrarEdicion} />}
 
       {exito && (
         <p className="mensaje exito">
@@ -219,12 +242,13 @@ export default function OrdenesServicio() {
                 <th>Servicio</th>
                 <th>Descripción</th>
                 <th>Estado</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {ordenes.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="sutil">
+                  <td colSpan={9} className="sutil">
                     No hay órdenes para el criterio ingresado.
                   </td>
                 </tr>
@@ -240,6 +264,12 @@ export default function OrdenesServicio() {
                     <td className="ajustar">{o.descripcion}</td>
                     <td>
                       <span className={`estado ${o.estado}`}>{ESTADO[o.estado] ?? o.estado}</span>
+                    </td>
+                    <td>
+                      {/* BTN-03 Editar (las órdenes Entregado/Cancelado se abren en solo lectura) */}
+                      <button className="secundario" onClick={() => editar(o.id)}>
+                        {o.estado === 'ENTREGADO' || o.estado === 'CANCELADO' ? 'Ver' : 'Editar'}
+                      </button>
                     </td>
                   </tr>
                 ))

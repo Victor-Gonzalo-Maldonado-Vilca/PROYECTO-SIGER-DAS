@@ -3,10 +3,12 @@ import type { Moto } from '../../dominio/ventas/Moto';
 import type { EstadoVenta, VentaMoto } from '../../dominio/ventas/VentaMoto';
 import type {
   ConsultaVentasMoto,
+  FilaClienteBusqueda,
   FilaVentaMoto,
   RepositorioMotos,
   RepositorioVentasMoto,
   VentaMotoRegistrada,
+  VentaParaAsociar,
 } from '../../dominio/ventas/repositorios';
 import { traducirErrorBD } from '../erroresBD';
 import { MotoEsquema, VentaMotoEsquema } from '../esquemas';
@@ -48,6 +50,10 @@ export class RepositorioMotosTypeORM implements RepositorioMotos {
     return f ? { id: Number(f.id), clienteId: f.cliente_id == null ? null : Number(f.cliente_id) } : null;
   }
 
+  async actualizarDescripcion(motoId: number, color: string | null, modelo: string | null): Promise<void> {
+    await this.em.query(`UPDATE tab_moto SET color = $2, modelo = $3 WHERE id = $1`, [motoId, color, modelo]);
+  }
+
   async registrarRecibida(datos: { placa: string; color: string | null; modelo: string | null; clienteId: number }) {
     try {
       const [f]: Array<Record<string, unknown>> = await this.em.query(
@@ -82,29 +88,70 @@ export class RepositorioVentasMotoTypeORM implements RepositorioVentasMoto {
       throw traducirErrorBD(error);
     }
   }
+
+  async bloquear(ventaId: number): Promise<VentaParaAsociar | null> {
+    const [f]: Array<Record<string, unknown>> = await this.em.query(
+      `SELECT id, nro_venta, estado, version FROM tab_venta_moto WHERE id = $1 FOR UPDATE`,
+      [ventaId],
+    );
+    if (!f) return null;
+    return { id: Number(f.id), nroVenta: String(f.nro_venta), estado: f.estado as EstadoVenta, version: Number(f.version) };
+  }
+
+  async asociarCliente(ventaId: number, clienteId: number): Promise<number> {
+    const [[f]]: [Array<Record<string, unknown>>, number] = await this.em.query(
+      `UPDATE tab_venta_moto SET cliente_id = $2, estado = 'CON_CLIENTE', version = version + 1
+        WHERE id = $1
+    RETURNING version`,
+      [ventaId, clienteId],
+    );
+    return Number(f.version);
+  }
 }
 
-/** Consulta de solo lectura para el listado TBL-12 (consulta parametrizada). */
+/** Consultas de solo lectura: TBL-18 (ventas) y TBL-12 (clientes). Consultas parametrizadas. */
 export class ConsultaVentasMotoTypeORM implements ConsultaVentasMoto {
   constructor(private readonly ds: DataSource) {}
 
-  async listar(filtro?: { texto?: string }): Promise<FilaVentaMoto[]> {
+  async buscarClientes(texto: string): Promise<FilaClienteBusqueda[]> {
     const filas: Array<Record<string, unknown>> = await this.ds.query(
-      `SELECT v.id, v.nro_venta, v.fecha, v.estado,
+      `SELECT id, tipo_documento, numero_documento, nombre_razon_social, telefono, estado
+         FROM tab_cliente
+        WHERE numero_documento LIKE $1 || '%'
+           OR nombre_razon_social ILIKE '%' || $1 || '%'
+     ORDER BY (numero_documento = $1) DESC NULLS LAST, nombre_razon_social
+        LIMIT 50`,
+      [texto],
+    );
+    return filas.map((f) => ({
+      id: Number(f.id),
+      tipoDocumento: (f.tipo_documento as 'DNI' | 'RUC' | null) ?? null,
+      numeroDocumento: (f.numero_documento as string | null) ?? null,
+      nombre: String(f.nombre_razon_social),
+      telefono: (f.telefono as string | null) ?? null,
+      estado: f.estado as 'ACTIVO' | 'INACTIVO',
+    }));
+  }
+
+  async listar(filtro?: { texto?: string; soloSinCliente?: boolean }): Promise<FilaVentaMoto[]> {
+    const filas: Array<Record<string, unknown>> = await this.ds.query(
+      `SELECT v.id, v.nro_venta, v.fecha, v.estado, v.version,
               m.marca, m.modelo, m.anio, m.color, m.numero_motor, m.numero_chasis,
               c.nombre_razon_social AS cliente
          FROM tab_venta_moto v
          JOIN tab_moto m      ON m.id = v.moto_id
     LEFT JOIN tab_cliente c   ON c.id = v.cliente_id
-        WHERE $1::text IS NULL
+        WHERE (NOT $2::boolean OR v.cliente_id IS NULL)
+          AND ($1::text IS NULL
            OR v.nro_venta     ILIKE '%' || $1 || '%'
            OR m.marca         ILIKE '%' || $1 || '%'
            OR m.modelo        ILIKE '%' || $1 || '%'
            OR m.numero_motor  ILIKE '%' || $1 || '%'
            OR m.numero_chasis ILIKE '%' || $1 || '%'
+           OR c.nombre_razon_social ILIKE '%' || $1 || '%')
      ORDER BY v.fecha DESC
         LIMIT 200`,
-      [filtro?.texto ?? null],
+      [filtro?.texto ?? null, filtro?.soloSinCliente ?? false],
     );
 
     return filas.map((f) => ({
@@ -119,6 +166,7 @@ export class ConsultaVentasMotoTypeORM implements ConsultaVentasMoto {
       numeroMotor: String(f.numero_motor),
       numeroChasis: String(f.numero_chasis),
       cliente: (f.cliente as string | null) ?? null,
+      version: Number(f.version),
     }));
   }
 }

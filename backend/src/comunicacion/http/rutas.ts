@@ -6,9 +6,11 @@ import { MODOS_SUNAT, type ServicioTributarioSimulado } from '../../integracione
 import type { ConsultarConformidades } from '../../aplicacion/ordenes/ConsultarConformidades';
 import type { ConsultarOrdenes } from '../../aplicacion/ordenes/ConsultarOrdenes';
 import type { RegistrarOrdenServicio } from '../../aplicacion/ordenes/RegistrarOrdenServicio';
+import type { ActualizarOrdenServicio } from '../../aplicacion/ordenes/ActualizarOrdenServicio';
 import type { RegistrarConformidadServicio } from '../../aplicacion/ordenes/RegistrarConformidadServicio';
 import type { IniciarSesion } from '../../aplicacion/seguridad/IniciarSesion';
 import type { ListarVentasMoto } from '../../aplicacion/ventas/ListarVentasMoto';
+import type { AsociarClienteVentaMoto } from '../../aplicacion/ventas/AsociarClienteVentaMoto';
 import type { RegistrarVentaMoto } from '../../aplicacion/ventas/RegistrarVentaMoto';
 import { Modulos } from '../../dominio/seguridad/permisos';
 import type { ServicioTokenJwt } from '../seguridad/adaptadores';
@@ -22,7 +24,9 @@ export interface CasosDeUso {
   iniciarSesion: IniciarSesion;
   registrarVentaMoto: RegistrarVentaMoto;
   listarVentasMoto: ListarVentasMoto;
+  asociarCliente: AsociarClienteVentaMoto;
   registrarOrden: RegistrarOrdenServicio;
+  actualizarOrden: ActualizarOrdenServicio;
   consultarOrdenes: ConsultarOrdenes;
   registrarConformidad: RegistrarConformidadServicio;
   consultarConformidades: ConsultarConformidades;
@@ -51,15 +55,37 @@ export function crearRutas(casos: CasosDeUso, tokens: ServicioTokenJwt): Router 
   r.get('/auth/yo', conSesion, (req, res) => res.json(req.usuario));
 
   // ---------------- MOD-04 Ventas: venta de motos (EDU-0004) ----------------
-  // TBL-12: listado de ventas
+  // TBL-18: listado de ventas (?sinCliente=1 -> pendientes de asociación, ILA-0017)
   r.get(
     '/ventas-moto',
     conSesion,
     requiereModulo(Modulos.VENTAS),
     async(async (req, res) => {
       const texto = typeof req.query.q === 'string' ? req.query.q : undefined;
-      res.json(await casos.listarVentasMoto.ejecutar(req.usuario, texto));
+      const soloSinCliente = req.query.sinCliente === '1' || req.query.sinCliente === 'true';
+      res.json(await casos.listarVentasMoto.ejecutar(req.usuario, texto, soloSinCliente));
     }),
+  );
+
+  // ILA-0017 paso 6: búsqueda de clientes por DNI, RUC o nombres (TBL-12)
+  r.get(
+    '/ventas-moto/clientes',
+    conSesion,
+    requiereModulo(Modulos.VENTAS),
+    async(async (req, res) => {
+      const texto = typeof req.query.q === 'string' ? req.query.q : undefined;
+      res.json(await casos.listarVentasMoto.buscarClientes(req.usuario, texto));
+    }),
+  );
+
+  // ILA-0017: BTN-24 Confirmar asociación
+  r.put(
+    '/ventas-moto/:id/cliente',
+    conSesion,
+    requiereModulo(Modulos.VENTAS),
+    async(async (req, res) =>
+      res.json(await casos.asociarCliente.ejecutar(Number(req.params.id), req.body ?? {}, req.usuario)),
+    ),
   );
 
   // ILA-0012: registrar venta de moto
@@ -90,6 +116,22 @@ export function crearRutas(casos: CasosDeUso, tokens: ServicioTokenJwt): Router 
     '/ordenes/proximo-numero',
     ...taller,
     async(async (req, res) => res.json(await casos.consultarOrdenes.proximoNumero(req.usuario))),
+  );
+
+  // INT-003: detalle de la orden para editar (con SEL-02 permitido e historial)
+  r.get(
+    '/ordenes/:id',
+    ...taller,
+    async(async (req, res) => res.json(await casos.consultarOrdenes.detalle(req.usuario, Number(req.params.id)))),
+  );
+
+  // CU-TAL-03: BTN-01 Confirmar
+  r.put(
+    '/ordenes/:id',
+    ...taller,
+    async(async (req, res) =>
+      res.json(await casos.actualizarOrden.ejecutar(Number(req.params.id), req.body ?? {}, req.usuario)),
+    ),
   );
 
   // ILA-0001: BTN-01 Guardar

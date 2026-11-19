@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { api, leerErrorApi, type ErrorApi } from '../api/cliente';
+import { AsociarCliente } from '../componentes/AsociarCliente';
 import type { EstadoVenta, FilaVentaMoto } from '../tipos';
 
 /**
@@ -36,20 +37,38 @@ export default function VentasMoto() {
   const [ventas, setVentas] = useState<FilaVentaMoto[]>([]);
   const [busqueda, setBusqueda] = useState('');
   const [errorListado, setErrorListado] = useState<string | null>(null);
+  // ILA-0017: filtro de ventas pendientes de asociación y venta seleccionada (BTN-23)
+  const [soloSinCliente, setSoloSinCliente] = useState(false);
+  const [asociando, setAsociando] = useState<FilaVentaMoto | null>(null);
 
-  const cargarVentas = useCallback(async (texto = '') => {
-    try {
-      const r = await api.get<FilaVentaMoto[]>('/ventas-moto', { params: texto ? { q: texto } : {} });
-      setVentas(r.data);
-      setErrorListado(null);
-    } catch (err) {
-      setErrorListado(leerErrorApi(err).mensaje);
-    }
-  }, []);
+  const cargarVentas = useCallback(
+    async (texto = '') => {
+      try {
+        const params: Record<string, string> = {};
+        if (texto) params.q = texto;
+        if (soloSinCliente) params.sinCliente = '1';
+        const r = await api.get<FilaVentaMoto[]>('/ventas-moto', { params });
+        setVentas(r.data);
+        setErrorListado(null);
+      } catch (err) {
+        setErrorListado(leerErrorApi(err).mensaje);
+      }
+    },
+    [soloSinCliente],
+  );
 
   useEffect(() => {
-    void cargarVentas();
+    void cargarVentas(busqueda.trim());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cargarVentas]);
+
+  const terminarAsociacion = (mensaje?: string) => {
+    setAsociando(null);
+    if (mensaje) {
+      setExito(mensaje); // MSG-58
+      void cargarVentas(busqueda.trim()); // paso 9: refresca TBL-18
+    }
+  };
 
   // BTN-02 Cancelar: descarta los datos sin registrar nada.
   const cancelar = () => {
@@ -131,20 +150,27 @@ export default function VentasMoto() {
         </form>
       )}
 
+      {asociando && <AsociarCliente key={asociando.id} venta={asociando} alTerminar={terminarAsociacion} />}
+
       <div className="tarjeta">
         <div className="encabezado">
-          <h3>Ventas registradas</h3>
+          <h3>{soloSinCliente ? 'Ventas pendientes de asociar cliente' : 'Ventas registradas'}</h3>
           <form
+            className="busqueda"
             onSubmit={(e) => {
               e.preventDefault();
-              void cargarVentas(busqueda);
+              void cargarVentas(busqueda.trim());
             }}
           >
             <input
-              placeholder="Buscar por N.° venta, marca, modelo, motor o chasis"
+              placeholder="N.° venta, marca, modelo, motor, chasis o cliente"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
             />
+            <label className="casilla">
+              <input type="checkbox" checked={soloSinCliente} onChange={(e) => setSoloSinCliente(e.target.checked)} />
+              Solo sin cliente
+            </label>
           </form>
         </div>
         {errorListado && <p className="mensaje error">{errorListado}</p>}
@@ -161,13 +187,16 @@ export default function VentasMoto() {
                 <th>N.° chasis</th>
                 <th>Cliente</th>
                 <th>Estado</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {ventas.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="sutil">
-                    No hay ventas registradas.
+                  <td colSpan={10} className="sutil">
+                    {soloSinCliente
+                      ? 'MSG-56: No existen ventas pendientes de asociación de cliente en el sistema.'
+                      : 'No hay ventas registradas.'}
                   </td>
                 </tr>
               ) : (
@@ -185,6 +214,21 @@ export default function VentasMoto() {
                     <td>{v.cliente ?? '—'}</td>
                     <td>
                       <span className={`estado ${v.estado}`}>{ETIQUETA_ESTADO[v.estado]}</span>
+                    </td>
+                    <td>
+                      {/* BTN-23 Asociar cliente */}
+                      {v.estado === 'SIN_CLIENTE' && (
+                        <button
+                          className="secundario"
+                          disabled={asociando !== null}
+                          onClick={() => {
+                            setExito(null);
+                            setAsociando(v);
+                          }}
+                        >
+                          Asociar cliente
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))

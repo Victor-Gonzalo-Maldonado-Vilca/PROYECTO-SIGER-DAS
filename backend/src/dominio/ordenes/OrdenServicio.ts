@@ -26,6 +26,40 @@ export interface OrdenParaConformidad {
   tieneConformidad: boolean;
 }
 
+/**
+ * CU-TAL-03 (RN-TAL-05): transiciones que se hacen A MANO desde SEL-02.
+ *  - RECEPCIONADO -> EN_PROCESO   «Actualizar avance» (diagrama de estados)
+ *  - RECEPCIONADO -> CANCELADO    «Eliminar orden» (diagrama de estados)
+ *  - EN_PROCESO   -> POR_ENTREGAR trabajo técnico terminado, lista para la conformidad
+ * Las demás las producen otros casos de uso (puntos de extensión de CU-TAL-03):
+ *  - -> FINALIZADO: la conformidad de servicio (ILA-0075)
+ *  - -> ENTREGADO:  el comprobante emitido (ILA-0018)
+ * Decisión: CU-TAL-03 permite EN_PROCESO -> FINALIZADO a mano, pero eso impediría
+ * registrar la conformidad (ILA-0075 exige EN_PROCESO o POR_ENTREGAR). Pendiente de
+ * uniformar en el catálogo.
+ */
+export const TRANSICIONES_MANUALES: Record<EstadoOrden, EstadoOrden[]> = {
+  [EstadoOrden.RECEPCIONADO]: [EstadoOrden.EN_PROCESO, EstadoOrden.CANCELADO],
+  [EstadoOrden.EN_PROCESO]: [EstadoOrden.POR_ENTREGAR],
+  [EstadoOrden.POR_ENTREGAR]: [],
+  [EstadoOrden.FINALIZADO]: [],
+  [EstadoOrden.ENTREGADO]: [],
+  [EstadoOrden.CANCELADO]: [],
+};
+
+/** RN-TAL-06 y precondición 2 de CU-TAL-03: ENTREGADO y CANCELADO no se editan. */
+export function esEditable(estado: EstadoOrden): boolean {
+  return estado !== EstadoOrden.ENTREGADO && estado !== EstadoOrden.CANCELADO;
+}
+
+export function esTransicionPermitida(actual: EstadoOrden, nuevo: EstadoOrden): boolean {
+  return actual === nuevo || TRANSICIONES_MANUALES[actual]?.includes(nuevo) === true;
+}
+
+export function leerEstadoOrden(valor: unknown): EstadoOrden | null {
+  return (Object.values(EstadoOrden) as string[]).includes(String(valor)) ? (valor as EstadoOrden) : null;
+}
+
 const ESTADOS_APTOS_CONFORMIDAD = [EstadoOrden.EN_PROCESO, EstadoOrden.POR_ENTREGAR];
 
 /**

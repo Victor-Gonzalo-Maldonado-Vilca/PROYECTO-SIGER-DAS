@@ -1,5 +1,6 @@
 import type { DataSource } from 'typeorm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { ActualizarOrdenServicio } from '../aplicacion/ordenes/ActualizarOrdenServicio';
 import { RegistrarOrdenServicio } from '../aplicacion/ordenes/RegistrarOrdenServicio';
 import type { UnidadDeTrabajo } from '../aplicacion/puertos/UnidadDeTrabajo';
 import { Modulos, Rol, type UsuarioAutenticado } from '../dominio/seguridad/permisos';
@@ -110,6 +111,91 @@ describe('ILA-0001 contra db_siger', () => {
     const res = await Promise.all([casoDeUso.ejecutar(orden('IT07-RX'), usuario), casoDeUso.ejecutar(orden('IT08-RX'), usuario)]);
     const numeros = res.map((r) => Number(r.nroOrden.split('-')[2])).sort((a, b) => a - b);
     expect(numeros[1] - numeros[0]).toBe(1);
+  });
+
+  describe('CU-TAL-03 Actualizar avance y estado', () => {
+    const editar = (ordenId: number, version: number, cambios: Record<string, unknown> = {}) =>
+      new ActualizarOrdenServicio(new UnidadDeTrabajoTypeORM(ds)).ejecutar(
+        ordenId,
+        {
+          nombresCliente: 'Cliente IT Editado',
+          telefono: TELEFONO,
+          color: 'Verde',
+          modelo: 'IT-200',
+          tipoServicio: 'MANTENIMIENTO',
+          descripcion: 'Descripción actualizada',
+          estado: 'EN_PROCESO',
+          version,
+          ...cambios,
+        },
+        usuario,
+      );
+    const versionDe = async (id: number) => Number((await ds.query(`SELECT version FROM tab_os WHERE id = $1`, [id]))[0].version);
+
+    it('actualiza orden, cliente y moto, cambia el estado y deja la trazabilidad', async () => {
+      const { ordenId } = await casoDeUso.ejecutar(orden('IT10-RX'), usuario);
+      const r = await editar(ordenId, await versionDe(ordenId));
+
+      expect(r).toMatchObject({ codigo: 'LBL-01', estado: 'EN_PROCESO' });
+      const [f] = await ds.query(
+        `SELECT os.estado, os.tipo_servicio, os.descripcion, c.nombre_razon_social, m.color, m.modelo
+           FROM tab_os os JOIN tab_cliente c ON c.id = os.cliente_id JOIN tab_moto m ON m.id = os.moto_id WHERE os.id = $1`,
+        [ordenId],
+      );
+      expect(f).toMatchObject({
+        estado: 'EN_PROCESO',
+        tipo_servicio: 'MANTENIMIENTO',
+        descripcion: 'Descripción actualizada',
+        nombre_razon_social: 'Cliente IT Editado',
+        color: 'Verde',
+        modelo: 'IT-200',
+      });
+      const traza = await ds.query(
+        `SELECT estado_anterior, estado_nuevo FROM tab_trazabilidad WHERE orden_id = $1 ORDER BY id`,
+        [ordenId],
+      );
+      expect(traza).toEqual([
+        { estado_anterior: null, estado_nuevo: 'RECEPCIONADO' },
+        { estado_anterior: 'RECEPCIONADO', estado_nuevo: 'EN_PROCESO' },
+      ]);
+    });
+
+    it('transición no permitida (RECEPCIONADO -> FINALIZADO) no modifica nada', async () => {
+      const { ordenId } = await casoDeUso.ejecutar(orden('IT11-RX'), usuario);
+      await expect(editar(ordenId, await versionDe(ordenId), { estado: 'FINALIZADO' })).rejects.toMatchObject({
+        codigo: 'TRANSICION-NO-PERMITIDA',
+      });
+      const [f] = await ds.query(`SELECT estado, descripcion FROM tab_os WHERE id = $1`, [ordenId]);
+      expect(f).toMatchObject({ estado: 'RECEPCIONADO', descripcion: 'Prueba de integración' });
+    });
+
+    it('una orden ENTREGADO no se puede editar (RN-TAL-06)', async () => {
+      const { ordenId } = await casoDeUso.ejecutar(orden('IT12-RX'), usuario);
+      await ds.query(`UPDATE tab_os SET estado = 'ENTREGADO' WHERE id = $1`, [ordenId]);
+      await expect(editar(ordenId, await versionDe(ordenId))).rejects.toMatchObject({ codigo: 'ORDEN-NO-EDITABLE' });
+    });
+
+    it('bloqueo optimista: con una versión vieja se rechaza y no se pisan los cambios del otro usuario', async () => {
+      const { ordenId } = await casoDeUso.ejecutar(orden('IT13-RX'), usuario);
+      const vista = await versionDe(ordenId);
+      await editar(ordenId, vista, { descripcion: 'Cambio del usuario A' });
+      await expect(editar(ordenId, vista, { descripcion: 'Cambio del usuario B' })).rejects.toMatchObject({
+        codigo: 'ORDEN-MODIFICADA',
+      });
+      const [f] = await ds.query(`SELECT descripcion FROM tab_os WHERE id = $1`, [ordenId]);
+      expect(f.descripcion).toBe('Cambio del usuario A');
+    });
+
+    it('dos ediciones simultáneas con la misma versión: solo una se guarda', async () => {
+      const { ordenId } = await casoDeUso.ejecutar(orden('IT14-RX'), usuario);
+      const vista = await versionDe(ordenId);
+      const res = await Promise.allSettled([
+        editar(ordenId, vista, { descripcion: 'A' }),
+        editar(ordenId, vista, { descripcion: 'B' }),
+      ]);
+      expect(res.filter((x) => x.status === 'fulfilled')).toHaveLength(1);
+      expect(await versionDe(ordenId)).toBe(vista + 1);
+    });
   });
 
   it('RNF-0004: si falla la trazabilidad, no queda orden, moto ni cliente, y no se consume el N.°', async () => {

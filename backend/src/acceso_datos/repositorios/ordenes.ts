@@ -3,8 +3,10 @@ import type { EstadoOrden, OrdenParaConformidad } from '../../dominio/ordenes/Or
 import type {
   ConsultaConformidades,
   ConsultaOrdenes,
+  DetalleOrden,
   FilaConformidad,
   FilaOrden,
+  OrdenParaEdicion,
   ItemServicio,
   NuevaConformidad,
   OrdenApta,
@@ -70,6 +72,32 @@ export class RepositorioOrdenesServicioTypeORM implements RepositorioOrdenesServ
     await this.em.query(`UPDATE tab_os SET estado = $2, version = version + 1 WHERE id = $1`, [ordenId, nuevo]);
   }
 
+  async bloquearParaEdicion(ordenId: number): Promise<OrdenParaEdicion | null> {
+    const [f]: Fila[] = await this.em.query(
+      `SELECT id, nro_orden, estado, version, cliente_id, moto_id FROM tab_os WHERE id = $1 FOR UPDATE`,
+      [ordenId],
+    );
+    if (!f) return null;
+    return {
+      id: Number(f.id),
+      nroOrden: String(f.nro_orden),
+      estado: f.estado as EstadoOrden,
+      version: Number(f.version),
+      clienteId: Number(f.cliente_id),
+      motoId: Number(f.moto_id),
+    };
+  }
+
+  async actualizarDatos(ordenId: number, d: { tipoServicio: string; descripcion: string; estado: EstadoOrden }) {
+    const [[f]]: [Fila[], number] = await this.em.query(
+      `UPDATE tab_os SET tipo_servicio = $2, descripcion = $3, estado = $4, version = version + 1
+        WHERE id = $1
+    RETURNING version`,
+      [ordenId, d.tipoServicio, d.descripcion, d.estado],
+    );
+    return Number(f.version);
+  }
+
   async ordenActivaDeMoto(motoId: number): Promise<string | null> {
     const [f]: Fila[] = await this.em.query(
       `SELECT nro_orden FROM tab_os WHERE moto_id = $1 AND estado IN ('RECEPCIONADO', 'EN_PROCESO') LIMIT 1`,
@@ -125,6 +153,46 @@ export class ConsultaOrdenesTypeORM implements ConsultaOrdenes {
       placa: (f.placa as string | null) ?? null,
       modelo: (f.modelo as string | null) ?? null,
     }));
+  }
+
+  async detalle(ordenId: number): Promise<DetalleOrden | null> {
+    const [f]: Fila[] = await this.ds.query(
+      `SELECT os.id, os.nro_orden, os.fecha_recepcion, os.estado, os.tipo_servicio, os.descripcion, os.version,
+              c.nombre_razon_social AS cliente, c.telefono, m.placa, m.modelo, m.color
+         FROM tab_os os
+         JOIN tab_cliente c ON c.id = os.cliente_id
+         JOIN tab_moto m    ON m.id = os.moto_id
+        WHERE os.id = $1`,
+      [ordenId],
+    );
+    if (!f) return null;
+    const historial: Fila[] = await this.ds.query(
+      `SELECT t.estado_anterior, t.estado_nuevo, t.fecha_hora, u.nombre_completo
+         FROM tab_trazabilidad t JOIN tab_usuario u ON u.id = t.usuario_id
+        WHERE t.orden_id = $1
+     ORDER BY t.fecha_hora, t.id`,
+      [ordenId],
+    );
+    return {
+      id: Number(f.id),
+      nroOrden: String(f.nro_orden),
+      fechaRecepcion: f.fecha_recepcion as Date,
+      estado: f.estado as EstadoOrden,
+      tipoServicio: String(f.tipo_servicio),
+      descripcion: String(f.descripcion),
+      cliente: String(f.cliente),
+      telefono: (f.telefono as string | null) ?? null,
+      placa: (f.placa as string | null) ?? null,
+      modelo: (f.modelo as string | null) ?? null,
+      color: (f.color as string | null) ?? null,
+      version: Number(f.version),
+      historial: historial.map((h) => ({
+        estadoAnterior: (h.estado_anterior as EstadoOrden | null) ?? null,
+        estadoNuevo: h.estado_nuevo as EstadoOrden,
+        usuario: String(h.nombre_completo),
+        fechaHora: h.fecha_hora as Date,
+      })),
+    };
   }
 
   async proximoNumero(): Promise<string> {

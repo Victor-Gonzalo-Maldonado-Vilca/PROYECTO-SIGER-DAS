@@ -4,6 +4,7 @@ import { ConsultaComprobantesTypeORM } from './acceso_datos/repositorios/comprob
 import { ConsultaConformidadesTypeORM, ConsultaOrdenesTypeORM } from './acceso_datos/repositorios/ordenes';
 import { ConsultarOrdenes } from './aplicacion/ordenes/ConsultarOrdenes';
 import { RegistrarOrdenServicio } from './aplicacion/ordenes/RegistrarOrdenServicio';
+import { ActualizarOrdenServicio } from './aplicacion/ordenes/ActualizarOrdenServicio';
 import { ConsultaVentasMotoTypeORM } from './acceso_datos/repositorios/ventas';
 import { RepositorioUsuariosTypeORM } from './acceso_datos/repositorios/usuarios';
 import { UnidadDeTrabajoTypeORM } from './acceso_datos/UnidadDeTrabajoTypeORM';
@@ -15,6 +16,7 @@ import { ConsultarConformidades } from './aplicacion/ordenes/ConsultarConformida
 import { RegistrarConformidadServicio } from './aplicacion/ordenes/RegistrarConformidadServicio';
 import { IniciarSesion } from './aplicacion/seguridad/IniciarSesion';
 import { ListarVentasMoto } from './aplicacion/ventas/ListarVentasMoto';
+import { AsociarClienteVentaMoto } from './aplicacion/ventas/AsociarClienteVentaMoto';
 import { RegistrarVentaMoto } from './aplicacion/ventas/RegistrarVentaMoto';
 import { crearApp } from './comunicacion/http/app';
 import { ServicioHashBcrypt, ServicioTokenJwt } from './comunicacion/seguridad/adaptadores';
@@ -50,7 +52,9 @@ async function iniciar() {
       iniciarSesion: new IniciarSesion(new RepositorioUsuariosTypeORM(ds), new ServicioHashBcrypt(), tokens),
       registrarVentaMoto: new RegistrarVentaMoto(uow),
       listarVentasMoto: new ListarVentasMoto(new ConsultaVentasMotoTypeORM(ds)),
+      asociarCliente: new AsociarClienteVentaMoto(uow),
       registrarOrden: new RegistrarOrdenServicio(uow),
+      actualizarOrden: new ActualizarOrdenServicio(uow),
       consultarOrdenes: new ConsultarOrdenes(new ConsultaOrdenesTypeORM(ds)),
       registrarConformidad: new RegistrarConformidadServicio(uow),
       consultarConformidades: new ConsultarConformidades(new ConsultaConformidadesTypeORM(ds)),

@@ -8,6 +8,16 @@ export interface ItemServicio {
   subtotal: number;
 }
 
+export interface OrdenParaEdicion {
+  id: number;
+  nroOrden: string;
+  estado: EstadoOrden;
+  /** Bloqueo optimista (RNF-0008): versión que el usuario vio al abrir el formulario. */
+  version: number;
+  clienteId: number;
+  motoId: number;
+}
+
 export interface RepositorioOrdenesServicio {
   /**
    * Lee la orden con SELECT ... FOR UPDATE: bloquea la fila hasta el fin de la
@@ -17,6 +27,10 @@ export interface RepositorioOrdenesServicio {
   bloquearParaConformidad(ordenId: number): Promise<OrdenParaConformidad | null>;
   itemsDeProforma(proformaId: number): Promise<ItemServicio[]>;
   cambiarEstado(ordenId: number, nuevo: EstadoOrden): Promise<void>;
+  /** CU-TAL-03: lee la orden con FOR UPDATE para editarla. */
+  bloquearParaEdicion(ordenId: number): Promise<OrdenParaEdicion | null>;
+  /** CU-TAL-03 paso 8: UPDATE de los datos de la orden; incrementa la versión. */
+  actualizarDatos(ordenId: number, d: { tipoServicio: string; descripcion: string; estado: EstadoOrden }): Promise<number>;
   /** RN-TAL-02: ¿la moto tiene una orden Recepcionado o En Proceso? Devuelve su N.° o null. */
   ordenActivaDeMoto(motoId: number): Promise<string | null>;
   /** ILA-0001 paso 7: INSERT con estado RECEPCIONADO; la BD genera el N.° ORD-AAAA-XXXX. */
@@ -93,8 +107,16 @@ export interface FilaOrden {
   modelo: string | null;
 }
 
+/** Detalle de la orden para INT-003 (formulario de edición + línea de tiempo de Tab_trazabilidad). */
+export interface DetalleOrden extends FilaOrden {
+  version: number;
+  color: string | null;
+  historial: Array<{ estadoAnterior: EstadoOrden | null; estadoNuevo: EstadoOrden; usuario: string; fechaHora: Date }>;
+}
+
 export interface ConsultaOrdenes {
   listar(filtro?: { texto?: string }): Promise<FilaOrden[]>;
+  detalle(ordenId: number): Promise<DetalleOrden | null>;
   /** Próximo N.° (solo referencial para mostrarlo al abrir el formulario, paso 2). */
   proximoNumero(): Promise<string>;
 }

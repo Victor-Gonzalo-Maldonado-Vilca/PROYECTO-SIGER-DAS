@@ -90,7 +90,9 @@ npm run typecheck
 |---|---|---|
 | EDU-0017 | Inicio de sesión con JWT y RBAC por módulo | ✅ |
 | ILA-0001 | Registrar orden de servicio (CU-TAL-01): cliente, moto, orden RECEPCIONADO y trazabilidad en una transacción; una sola orden activa por placa (MSG-30); N.° ORD-AAAA-XXXX anual sin huecos | ✅ |
+| CU-TAL-03 | Actualizar avance y estado de la orden: máquina de estados, trazabilidad y bloqueo optimista por versión (RNF-0008) | ✅ |
 | ILA-0012 | Registrar venta de moto: transacción atómica Tab_moto + Tab_venta_moto + auditoría | ✅ |
+| ILA-0017 | Asociar cliente a venta de moto (CU-VEN-10): búsqueda por DNI/RUC/nombre, solo clientes fiscales, SIN_CLIENTE → CON_CLIENTE con bloqueo optimista | ✅ |
 | ILA-0075 | Conformidad de servicio con firma PAD-01: INSERT tab_CS + UPDATE tab_OS + historial en una transacción | ✅ |
 | ILA-0018 | Emitir boleta a persona natural: outbox, job de reintentos, conciliación y correlativo sin huecos (PRO-03 y PRO-04), con SUNAT simulada | ✅ |
 
