@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, sesionGuardada } from './api/cliente';
+import Clientes from './paginas/Clientes';
 import Comprobantes from './paginas/Comprobantes';
 import Conformidades from './paginas/Conformidades';
 import Login from './paginas/Login';
@@ -12,6 +13,7 @@ const PANTALLAS = [
   { clave: 'ventas-moto', titulo: 'Venta de motos', modulo: 'MOD-04', componente: VentasMoto },
   { clave: 'ordenes', titulo: 'Órdenes de servicio', modulo: 'MOD-02', componente: OrdenesServicio },
   { clave: 'conformidades', titulo: 'Conformidad de servicio', modulo: 'MOD-02', componente: Conformidades },
+  { clave: 'clientes', titulo: 'Clientes', modulo: 'MOD-05', componente: Clientes },
   { clave: 'comprobantes', titulo: 'Comprobantes', modulo: 'MOD-08', componente: Comprobantes },
 ] as const;
 

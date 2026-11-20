@@ -13,6 +13,12 @@ const RESTRICCIONES_UNICAS: Record<string, ErrorConflicto> = {
     'No se puede emitir la boleta: la transacción ya tiene un comprobante.',
     'transaccion',
   ),
+  // CU-CLI-01 / CU-CLI-03 (RN-CLI-01): dos registros simultáneos del mismo documento.
+  uq_cliente_numero_documento: new ErrorConflicto(
+    'MSG-102',
+    'El número de documento ingresado ya se encuentra registrado',
+    'numeroDocumento',
+  ),
   uq_cs_orden: new ErrorConflicto(
     'MSG-05',
     'Error en el registro de conformidad: la orden ya tiene una conformidad registrada',

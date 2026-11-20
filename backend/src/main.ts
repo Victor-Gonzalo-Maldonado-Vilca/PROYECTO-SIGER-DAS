@@ -1,6 +1,11 @@
 import { config } from './config';
 import { crearFuenteDatos } from './acceso_datos/fuenteDatos';
+import { ConsultaClientesTypeORM } from './acceso_datos/repositorios/clientes';
 import { ConsultaComprobantesTypeORM } from './acceso_datos/repositorios/comprobantes';
+import { ActualizarCliente } from './aplicacion/clientes/ActualizarCliente';
+import { ConsultarClientes } from './aplicacion/clientes/ConsultarClientes';
+import { InhabilitarCliente } from './aplicacion/clientes/InhabilitarCliente';
+import { RegistrarCliente } from './aplicacion/clientes/RegistrarCliente';
 import { ConsultaConformidadesTypeORM, ConsultaOrdenesTypeORM } from './acceso_datos/repositorios/ordenes';
 import { ConsultarOrdenes } from './aplicacion/ordenes/ConsultarOrdenes';
 import { RegistrarOrdenServicio } from './aplicacion/ordenes/RegistrarOrdenServicio';
@@ -63,6 +68,10 @@ async function iniciar() {
       emitirBoleta: new EmitirBoleta(uow, procesadorSunat),
       consultarComprobantes: new ConsultarComprobantes(new ConsultaComprobantesTypeORM(ds), uow),
       reintentarEnvio: new ReintentarEnvio(procesadorSunat),
+      registrarCliente: new RegistrarCliente(uow),
+      actualizarCliente: new ActualizarCliente(uow),
+      inhabilitarCliente: new InhabilitarCliente(uow),
+      consultarClientes: new ConsultarClientes(new ConsultaClientesTypeORM(ds)),
       sunatSimulado: config.esProduccion ? undefined : sunat,
     },
     tokens,

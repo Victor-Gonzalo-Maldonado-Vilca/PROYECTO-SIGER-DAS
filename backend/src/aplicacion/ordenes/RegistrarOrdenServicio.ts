@@ -44,11 +44,20 @@ export class RegistrarOrdenServicio {
     const datos = validarDatosRecepcion(entrada);
 
     return this.uow.ejecutar(async (r) => {
-      const clienteId = await r.clientes.obtenerOCrear({
+      const cliente = await r.clientes.obtenerOCrear({
         nombre: datos.nombresCliente,
         telefono: datos.telefono,
         documento: datos.documento,
       });
+      // CU-CLI-04 postcondición: un cliente inhabilitado no puede abrir nuevas órdenes.
+      if (cliente.estado !== 'ACTIVO') {
+        throw new ErrorConflicto(
+          'CLIENTE-INACTIVO',
+          'El cliente está inhabilitado. Un gerente debe reactivarlo en Clientes (MOD-05) antes de registrar la orden.',
+          'documento',
+        );
+      }
+      const clienteId = cliente.id;
 
       // La moto se reconoce por su placa; si es la primera vez que ingresa, se registra.
       const moto = await r.motos.bloquearPorPlaca(datos.placa);

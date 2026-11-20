@@ -97,9 +97,12 @@ Trazabilidad: cada **educción (EDU)** es un requisito del cliente agrupado en u
 | MOD-04 Ventas | EDU-0004 | ILA-0012 | Registrar venta de moto: transacción atómica Tab_moto + Tab_venta_moto + auditoría. Incluye el precio de venta obligatorio (IGV incluido), una **adición al catálogo**: ILA-0012 no lo pide, pero ILA-0018 necesita el monto | ✅ |
 | MOD-04 Ventas | EDU-0004 | CU-VEN-08 | Actualizar venta de moto (solo Gerente): datos, motor/chasis únicos excluyendo la propia moto, precio; bloqueada con comprobante (MSG-51) | ✅ |
 | MOD-04 Ventas | EDU-0004 | ILA-0017 (CU-VEN-10) | Asociar cliente a venta de moto: búsqueda por DNI/RUC/nombre, solo clientes fiscales, SIN_CLIENTE → CON_CLIENTE con bloqueo optimista | ✅ |
+| MOD-05 Clientes | EDU-0020 | CU-CLI-01 a CU-CLI-05 (ILA-0079 a ILA-0082) | Registrar (MSG-101; documento único MSG-102 también ante registros simultáneos), consultar con filtro de estado (MSG-103), actualizar con bloqueo optimista (MSG-104), inhabilitar solo el Gerente con baja lógica (MSG-105) y bloqueo si tiene operaciones pendientes (MSG-106), e historial de vehículos, órdenes, proformas y comprobantes. Un cliente inactivo no puede abrir órdenes ni asociarse a ventas. **Adición**: reactivar cliente | ✅ |
 | MOD-08 Comprobantes de pago | EDU-0005 | ILA-0018 | Emitir boleta a persona natural: outbox, job de reintentos, conciliación y correlativo sin huecos (PRO-03 y PRO-04), con SUNAT simulada | ✅ |
 
-> ⚠️ Pendiente de confirmar en el catálogo: si CU-TAL-03 pertenece a EDU-0001 o a EDU-0002 (ambas son de MOD-02).
+> ⚠️ Pendientes de confirmar con el equipo:
+> - Si CU-TAL-03 pertenece a EDU-0001 o a EDU-0002 (ambas son de MOD-02).
+> - MOD-05: la ficha FD-DCU-05 tiene 5 casos de uso y el catálogo 4 ilaciones (ILA-0079 a ILA-0082); falta la correspondencia exacta. La ficha menciona CE y Pasaporte, pero se siguió la Vista Lógica (solo DNI y RUC). El perfil Mecánico no tiene MOD-05, aunque la ficha nombra al recepcionista de taller como actor.
 
 ## Cómo agregar un caso de uso nuevo
 

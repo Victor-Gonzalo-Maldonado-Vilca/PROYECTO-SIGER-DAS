@@ -148,3 +148,14 @@ th { color: var(--sutil); font-weight: 600; }
 .estado { padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.8rem; background: #eef0f3; }
 .estado.CON_CLIENTE { background: #e6f0fb; color: #1f4f8a; }
 .estado.COMPROBANTE_EMITIDO { background: var(--exito-fondo); color: var(--exito-texto); }
+
+/* MOD-05 Clientes */
+.estado.ACTIVO { background: var(--exito-fondo); color: var(--exito-texto); }
+.estado.INACTIVO { background: #eef0f3; color: var(--sutil); }
+.busqueda select { width: auto; }
+.modal.amplio { width: min(960px, 100%); }
+.ficha { display: grid; grid-template-columns: max-content 1fr; gap: 0.4rem 1rem; margin: 0; }
+.ficha dt { color: var(--sutil); font-weight: 600; font-size: 0.9rem; }
+.ficha dd { margin: 0; overflow-wrap: anywhere; }
+.pestanas-internas { display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 0.5rem 0 0.75rem; }
+.pestanas-internas button { padding: 0.35rem 0.8rem; font-size: 0.85rem; }

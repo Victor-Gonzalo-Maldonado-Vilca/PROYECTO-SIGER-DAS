@@ -8,6 +8,10 @@ import type { ConsultarOrdenes } from '../../aplicacion/ordenes/ConsultarOrdenes
 import type { RegistrarOrdenServicio } from '../../aplicacion/ordenes/RegistrarOrdenServicio';
 import type { ActualizarOrdenServicio } from '../../aplicacion/ordenes/ActualizarOrdenServicio';
 import type { RegistrarConformidadServicio } from '../../aplicacion/ordenes/RegistrarConformidadServicio';
+import type { ActualizarCliente } from '../../aplicacion/clientes/ActualizarCliente';
+import type { ConsultarClientes } from '../../aplicacion/clientes/ConsultarClientes';
+import type { InhabilitarCliente } from '../../aplicacion/clientes/InhabilitarCliente';
+import type { RegistrarCliente } from '../../aplicacion/clientes/RegistrarCliente';
 import type { IniciarSesion } from '../../aplicacion/seguridad/IniciarSesion';
 import type { ListarVentasMoto } from '../../aplicacion/ventas/ListarVentasMoto';
 import type { AsociarClienteVentaMoto } from '../../aplicacion/ventas/AsociarClienteVentaMoto';
@@ -35,6 +39,10 @@ export interface CasosDeUso {
   emitirBoleta: EmitirBoleta;
   consultarComprobantes: ConsultarComprobantes;
   reintentarEnvio: ReintentarEnvio;
+  registrarCliente: RegistrarCliente;
+  actualizarCliente: ActualizarCliente;
+  inhabilitarCliente: InhabilitarCliente;
+  consultarClientes: ConsultarClientes;
   /** Solo en desarrollo: permite cambiar el modo de la SUNAT simulada. */
   sunatSimulado?: ServicioTributarioSimulado;
 }
@@ -109,6 +117,64 @@ export function crearRutas(casos: CasosDeUso, tokens: ServicioTokenJwt): Router 
       const resultado = await casos.registrarVentaMoto.ejecutar(req.body ?? {}, req.usuario);
       res.status(201).json(resultado);
     }),
+  );
+
+  // ---------------- MOD-05 Clientes (EDU-0020, CU-CLI-01 a CU-CLI-05) ----------------
+  const clientes = [conSesion, requiereModulo(Modulos.CLIENTES)];
+
+  // CU-CLI-02: TBL-12 con INP-01 (?q=) y SEL-01 (?estado=ACTIVO|INACTIVO)
+  r.get(
+    '/clientes',
+    ...clientes,
+    async(async (req, res) => res.json(await casos.consultarClientes.listar(req.usuario, req.query.q, req.query.estado))),
+  );
+
+  // CU-CLI-02: BTN-05 Ver detalle
+  r.get(
+    '/clientes/:id',
+    ...clientes,
+    async(async (req, res) => res.json(await casos.consultarClientes.detalle(req.usuario, Number(req.params.id)))),
+  );
+
+  // CU-CLI-05: BTN-08 Ver historial
+  r.get(
+    '/clientes/:id/historial',
+    ...clientes,
+    async(async (req, res) => res.json(await casos.consultarClientes.historial(req.usuario, Number(req.params.id)))),
+  );
+
+  // CU-CLI-01: BTN-01 Guardar
+  r.post(
+    '/clientes',
+    ...clientes,
+    async(async (req, res) => res.status(201).json(await casos.registrarCliente.ejecutar(req.body ?? {}, req.usuario))),
+  );
+
+  // CU-CLI-03: BTN-01 Guardar cambios
+  r.put(
+    '/clientes/:id',
+    ...clientes,
+    async(async (req, res) =>
+      res.json(await casos.actualizarCliente.ejecutar(Number(req.params.id), req.body ?? {}, req.usuario)),
+    ),
+  );
+
+  // CU-CLI-04: BTN-04 Inhabilitar (solo Gerente; el caso de uso lo verifica)
+  r.post(
+    '/clientes/:id/inhabilitar',
+    ...clientes,
+    async(async (req, res) =>
+      res.json(await casos.inhabilitarCliente.inhabilitar(Number(req.params.id), req.body ?? {}, req.usuario)),
+    ),
+  );
+
+  // Adición: reactivar un cliente inhabilitado (solo Gerente)
+  r.post(
+    '/clientes/:id/reactivar',
+    ...clientes,
+    async(async (req, res) =>
+      res.json(await casos.inhabilitarCliente.reactivar(Number(req.params.id), req.body ?? {}, req.usuario)),
+    ),
   );
 
   const taller = [conSesion, requiereModulo(Modulos.ORDENES_SERVICIO)];
