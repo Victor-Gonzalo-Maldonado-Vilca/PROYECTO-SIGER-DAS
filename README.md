@@ -86,17 +86,20 @@ npm run typecheck
 
 ## Avance por caso de uso
 
-| Ilación | Descripción | Estado |
-|---|---|---|
-| EDU-0017 | Inicio de sesión con JWT y RBAC por módulo | ✅ |
-| ILA-0001 | Registrar orden de servicio (CU-TAL-01): cliente, moto, orden RECEPCIONADO y trazabilidad en una transacción; una sola orden activa por placa (MSG-30); N.° ORD-AAAA-XXXX anual sin huecos | ✅ |
-| CU-TAL-03 | Actualizar avance y estado de la orden: máquina de estados, trazabilidad y bloqueo optimista por versión (RNF-0008) | ✅ |
-| ILA-0012 + precio | Precio de venta obligatorio (IGV incluido). **Adición al catálogo**: ILA-0012 no lo pide, pero ILA-0018 necesita el monto | ✅ |
-| ILA-0012 | Registrar venta de moto: transacción atómica Tab_moto + Tab_venta_moto + auditoría | ✅ |
-| CU-VEN-08 | Actualizar venta de moto (solo Gerente): datos, motor/chasis únicos excluyendo la propia moto, precio; bloqueada con comprobante (MSG-51) | ✅ |
-| ILA-0017 | Asociar cliente a venta de moto (CU-VEN-10): búsqueda por DNI/RUC/nombre, solo clientes fiscales, SIN_CLIENTE → CON_CLIENTE con bloqueo optimista | ✅ |
-| ILA-0075 | Conformidad de servicio con firma PAD-01: INSERT tab_CS + UPDATE tab_OS + historial en una transacción | ✅ |
-| ILA-0018 | Emitir boleta a persona natural: outbox, job de reintentos, conciliación y correlativo sin huecos (PRO-03 y PRO-04), con SUNAT simulada | ✅ |
+Trazabilidad: cada **educción (EDU)** es un requisito del cliente agrupado en un módulo (MOD). Cada **ilación (ILA)** es el flujo detallado de una funcionalidad de esa educción. Los **casos de uso (CU)** sin ilación propia se listan con su código del catálogo.
+
+| Módulo | Educción | Ilación / CU | Descripción | Estado |
+|---|---|---|---|---|
+| MOD-01 Seguridad | EDU-0017 | — | Inicio de sesión con JWT y RBAC por módulo | ✅ |
+| MOD-02 Órdenes de servicio | EDU-0001 | ILA-0001 (CU-TAL-01) | Registrar orden de servicio: cliente, moto, orden RECEPCIONADO y trazabilidad en una transacción; una sola orden activa por placa (MSG-30); N.° ORD-AAAA-XXXX anual sin huecos | ✅ |
+| MOD-02 Órdenes de servicio | EDU-0001 ⚠️ | CU-TAL-03 | Actualizar avance y estado de la orden: máquina de estados, trazabilidad y bloqueo optimista por versión (RNF-0008) | ✅ |
+| MOD-02 Órdenes de servicio | EDU-0019 | ILA-0075 | Conformidad de servicio con firma PAD-01: INSERT tab_CS + UPDATE tab_OS + historial en una transacción | ✅ |
+| MOD-04 Ventas | EDU-0004 | ILA-0012 | Registrar venta de moto: transacción atómica Tab_moto + Tab_venta_moto + auditoría. Incluye el precio de venta obligatorio (IGV incluido), una **adición al catálogo**: ILA-0012 no lo pide, pero ILA-0018 necesita el monto | ✅ |
+| MOD-04 Ventas | EDU-0004 | CU-VEN-08 | Actualizar venta de moto (solo Gerente): datos, motor/chasis únicos excluyendo la propia moto, precio; bloqueada con comprobante (MSG-51) | ✅ |
+| MOD-04 Ventas | EDU-0004 | ILA-0017 (CU-VEN-10) | Asociar cliente a venta de moto: búsqueda por DNI/RUC/nombre, solo clientes fiscales, SIN_CLIENTE → CON_CLIENTE con bloqueo optimista | ✅ |
+| MOD-08 Comprobantes de pago | EDU-0005 | ILA-0018 | Emitir boleta a persona natural: outbox, job de reintentos, conciliación y correlativo sin huecos (PRO-03 y PRO-04), con SUNAT simulada | ✅ |
+
+> ⚠️ Pendiente de confirmar en el catálogo: si CU-TAL-03 pertenece a EDU-0001 o a EDU-0002 (ambas son de MOD-02).
 
 ## Cómo agregar un caso de uso nuevo
 
